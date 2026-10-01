@@ -56,6 +56,7 @@ Route::prefix('v1')->group(function () {
             // Tarefas escopadas ao projeto
             Route::get('/tasks', [TaskController::class, 'indexByProject']);
             Route::post('/tasks', [TaskController::class, 'store']);
+            Route::post('/tasks/reorder', [TaskController::class, 'reorder']);
         });
 
         // Gestão Global de Tarefas

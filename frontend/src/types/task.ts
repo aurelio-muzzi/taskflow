@@ -21,6 +21,7 @@ export interface Task {
   due_date: string | null
   estimated_hours: number | null
   order: number
+  comments_count?: number
   completed_at: string | null
   created_at: string
   updated_at: string
@@ -59,4 +60,10 @@ export interface UpdateTaskPayload {
   due_date?: string | null
   estimated_hours?: number | null
   order?: number
+}
+
+export interface ReorderTaskItem {
+  id: number
+  order: number
+  status?: TaskStatus
 }
