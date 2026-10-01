@@ -47,12 +47,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/tasks',
     name: 'tasks',
-    component: () => import('../views/PlaceholderView.vue'),
-    props: {
-      title: 'Módulo de Tarefas & Kanban',
-      stage: 'Etapa 4 e 7',
-      description: 'Gerenciamento de tarefas, prioridades, estimativas e fluxo Kanban interativo.'
-    },
+    component: () => import('../views/tasks/TaskListView.vue'),
     meta: { title: 'Tarefas — TaskFlow', requiresAuth: true }
   },
   {
