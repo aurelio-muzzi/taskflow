@@ -8,8 +8,12 @@ on:
 
 jobs:
   backend-quality:
-    name: Backend Lint & Tests
+    name: Backend Lint & Tests (PHP ${{ matrix.php-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.3', '8.4']
 
     services:
       postgres:
@@ -33,21 +37,33 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: ${{ matrix.php-version }}
           extensions: mbstring, dom, fileinfo, pdo, pdo_pgsql, pgsql, zip
           coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ matrix.php-version }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: |
+            composer-${{ matrix.php-version }}-
 
       - name: Install Composer dependencies
         working-directory: ./backend
         run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: Code Style Check (Pint)
+        if: matrix.php-version == '8.4'
         working-directory: ./backend
         run: ./vendor/bin/pint --test
 
       - name: Run Backend Tests
         working-directory: ./backend
         env:
+          APP_ENV: testing
+          APP_KEY: base64:dEYwUkhwZXpKVFhRcG4yaFhSZUZUcG9wT1p5bFhHVEw=
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
@@ -57,7 +73,7 @@ jobs:
         run: php artisan test
 
   frontend-quality:
-    name: Frontend Lint & Build
+    name: Frontend Type-Check & Build
     runs-on: ubuntu-latest
 
     steps:

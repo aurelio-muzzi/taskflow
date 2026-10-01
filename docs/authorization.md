@@ -1,21 +1,20 @@
-# Autorização e RBAC
+# Autorização e RBAC — TaskFlow
 
-O TaskFlow implementa autorização em dois níveis complementares:
+Para a documentação completa, matriz de permissões por perfil e implementação de regras de segurança, consulte:
 
-## 1. Nível Global de Sistema (System Roles)
+👉 **[docs/rbac.md](file:///c:/Projeto/taskflow/docs/rbac.md)**
 
-* **`ADMIN`**: Acesso completo ao sistema, relatórios gerenciais, usuários e auditoria.
-* **`MANAGER`**: Pode criar projetos e gerenciar projetos aos quais é associado.
-* **`USER`**: Pode participar de projetos em que foi incluído e interagir em suas tarefas.
+---
 
-## 2. Nível Contextual do Projeto (Project Roles)
+### Resumo Rápido
 
-Dentro de cada projeto, um usuário possui uma função em `project_members`:
-* **`OWNER`**: Criador/dono do projeto.
-* **`MANAGER`**: Gestor do projeto.
-* **`MEMBER`**: Membro executor.
-* **`VIEWER`**: Apenas visualizador.
+1. **Perfis Globais (System Roles):**
+   * `ADMIN`: Acesso global e irrestrito.
+   * `MANAGER`: Criação e gestão de projetos e relatórios.
+   * `USER`: Participação em projetos e tarefas atribuídas.
 
-## 3. Policies
-
-Cada entidade possui uma Policy dedicada (`UserPolicy`, `ProjectPolicy`, `TaskPolicy`, `CommentPolicy`) que avalia as permissões tanto globais quanto contextuais.
+2. **Perfis de Projeto (Project Roles):**
+   * `OWNER`: Dono e criador do projeto.
+   * `MANAGER`: Gestor operacional da equipe e tarefas.
+   * `MEMBER`: Executor com permissão de criação, movimentação no Kanban e comentários.
+   * `VIEWER`: Apenas leitura sem capacidade de alteração.
