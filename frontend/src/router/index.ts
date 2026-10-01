@@ -53,13 +53,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/audit-logs',
     name: 'audit-logs',
-    component: () => import('../views/PlaceholderView.vue'),
-    props: {
-      title: 'Trilha de Auditoria',
-      stage: 'Etapa 5',
-      description: 'Registro cronológico de alterações, snapshots de dados e rastreabilidade total.'
-    },
-    meta: { title: 'Auditoria — TaskFlow', requiresAuth: true, requiresAdmin: true }
+    component: () => import('../views/audit/AuditLogListView.vue'),
+    meta: { title: 'Trilha de Auditoria — TaskFlow', requiresAuth: true, requiresManagerOrAdmin: true }
   },
   {
     path: '/:pathMatch(.*)*',
@@ -93,6 +88,11 @@ router.beforeEach((to, _from, next) => {
 
   // Rota exige privilégio de Administrador
   if (to.meta.requiresAdmin && user?.role?.slug !== 'admin') {
+    return next({ name: 'dashboard' })
+  }
+
+  // Rota exige privilégio de Administrador ou Gerente
+  if (to.meta.requiresManagerOrAdmin && !['admin', 'manager'].includes(user?.role?.slug)) {
     return next({ name: 'dashboard' })
   }
 

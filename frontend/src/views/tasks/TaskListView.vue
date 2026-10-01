@@ -7,8 +7,11 @@ import Pagination from '../../components/common/Pagination.vue'
 import { taskService } from '../../services/taskService'
 import { projectService } from '../../services/projectService'
 import { userService } from '../../services/userService'
+import { useAuthStore } from '../../stores/auth'
 import { useToast } from '../../composables/useToast'
+import { commentService } from '../../services/commentService'
 import type { Task, TaskPriority, TaskStatus, CreateTaskPayload, UpdateTaskPayload } from '../../types/task'
+import type { TaskComment } from '../../types/comment'
 import type { Project } from '../../types/project'
 import type { User } from '../../types/auth'
 import type { PaginationMeta } from '../../types/api'
@@ -21,11 +24,67 @@ import {
   Edit2,
   Trash2,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare,
+  Send
 } from '@lucide/vue'
 
 const route = useRoute()
+const authStore = useAuthStore()
 const toast = useToast()
+
+// Modal de Comentários
+const isCommentsModalOpen = ref(false)
+const activeTaskForComments = ref<Task | null>(null)
+const comments = ref<TaskComment[]>([])
+const loadingComments = ref(false)
+const newCommentText = ref('')
+const submittingComment = ref(false)
+
+async function openCommentsModal(task: Task) {
+  activeTaskForComments.value = task
+  isCommentsModalOpen.value = true
+  loadingComments.value = true
+  try {
+    const res = await commentService.getComments(task.id)
+    if (res.data) {
+      comments.value = res.data
+    }
+  } catch {
+    toast.error('Erro ao carregar comentários.')
+  } finally {
+    loadingComments.value = false
+  }
+}
+
+async function submitComment() {
+  if (!newCommentText.value.trim() || !activeTaskForComments.value) return
+  submittingComment.value = true
+  try {
+    const res = await commentService.createComment(activeTaskForComments.value.id, newCommentText.value.trim())
+    if (res.data) {
+      comments.value.push(res.data)
+      newCommentText.value = ''
+      toast.success('Comentário publicado!')
+    }
+  } catch (error: any) {
+    const msg = error.response?.data?.message || 'Erro ao publicar comentário.'
+    toast.error(msg)
+  } finally {
+    submittingComment.value = false
+  }
+}
+
+async function removeComment(commentId: number) {
+  try {
+    await commentService.deleteComment(commentId)
+    comments.value = comments.value.filter(c => c.id !== commentId)
+    toast.success('Comentário removido.')
+  } catch (error: any) {
+    const msg = error.response?.data?.message || 'Erro ao remover comentário.'
+    toast.error(msg)
+  }
+}
 
 const tasks = ref<Task[]>([])
 const projects = ref<Project[]>([])
@@ -497,6 +556,13 @@ onMounted(() => {
                 <td class="px-5 py-3.5 text-right whitespace-nowrap">
                   <div class="flex items-center justify-end gap-1">
                     <button
+                      @click="openCommentsModal(task)"
+                      title="Comentários da Tarefa"
+                      class="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition-colors"
+                    >
+                      <MessageSquare class="w-4 h-4" />
+                    </button>
+                    <button
                       @click="openEditModal(task)"
                       title="Editar Tarefa"
                       class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
@@ -715,6 +781,84 @@ onMounted(() => {
               Excluir Tarefa
             </button>
           </div>
+        </div>
+      </Modal>
+
+      <!-- Modal de Comentários da Tarefa -->
+      <Modal
+        :show="isCommentsModalOpen"
+        :title="`Comentários: ${activeTaskForComments?.title || ''}`"
+        max-width="lg"
+        @close="isCommentsModalOpen = false"
+      >
+        <div class="space-y-4">
+          <!-- Lista de Comentários -->
+          <div class="max-h-80 overflow-y-auto space-y-3 pr-1">
+            <div v-if="loadingComments" class="flex flex-col items-center justify-center p-8 text-slate-500">
+              <Loader2 class="w-6 h-6 animate-spin text-emerald-400 mb-2" />
+              <span class="text-xs">Carregando comentários...</span>
+            </div>
+
+            <div v-else-if="comments.length === 0" class="p-8 text-center text-xs text-slate-500">
+              Nenhum comentário registrado ainda. Seja o primeiro a comentar!
+            </div>
+
+            <div
+              v-else
+              v-for="comm in comments"
+              :key="comm.id"
+              class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1.5"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center font-bold text-[10px] text-slate-300">
+                    {{ comm.user?.name ? comm.user.name.charAt(0).toUpperCase() : 'U' }}
+                  </div>
+                  <span class="font-semibold text-white">{{ comm.user?.name || 'Usuário' }}</span>
+                  <span class="text-[10px] text-slate-500">
+                    {{ new Date(comm.created_at).toLocaleString('pt-BR') }}
+                  </span>
+                </div>
+
+                <button
+                  v-if="comm.user_id === authStore.user?.id || authStore.isAdmin"
+                  @click="removeComment(comm.id)"
+                  title="Excluir Comentário"
+                  class="text-slate-500 hover:text-rose-400 p-1 rounded transition-colors"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <p class="text-slate-300 whitespace-pre-line pl-8">{{ comm.content }}</p>
+            </div>
+          </div>
+
+          <!-- Formulário de Novo Comentário -->
+          <form @submit.prevent="submitComment" class="space-y-3 pt-3 border-t border-slate-800">
+            <div>
+              <textarea
+                v-model="newCommentText"
+                rows="2"
+                required
+                placeholder="Escreva um comentário ou atualização sobre esta tarefa..."
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              ></textarea>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] text-slate-500">Pressione Enviar para registrar.</span>
+              <button
+                type="submit"
+                :disabled="submittingComment || !newCommentText.trim()"
+                class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold text-xs rounded-xl shadow-sm transition-colors"
+              >
+                <Loader2 v-if="submittingComment" class="w-3.5 h-3.5 animate-spin" />
+                <Send v-else class="w-3.5 h-3.5" />
+                <span>Comentar</span>
+              </button>
+            </div>
+          </form>
         </div>
       </Modal>
     </div>
