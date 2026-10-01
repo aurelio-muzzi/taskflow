@@ -35,6 +35,7 @@ class TaskResource extends JsonResource
             'due_date' => $this->due_date?->format('Y-m-d'),
             'estimated_hours' => $this->estimated_hours !== null ? (float) $this->estimated_hours : null,
             'order' => $this->order,
+            'comments_count' => (int) ($this->comments_count ?? $this->comments()->count()),
             'completed_at' => $this->completed_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

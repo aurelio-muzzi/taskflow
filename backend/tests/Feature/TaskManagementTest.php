@@ -257,4 +257,74 @@ class TaskManagementTest extends TestCase
             ->assertJsonPath('data.items.0.status', TaskStatus::IN_PROGRESS->value)
             ->assertJsonPath('data.items.0.priority', TaskPriority::HIGH->value);
     }
+
+    public function test_project_member_can_reorder_tasks_and_transition_status(): void
+    {
+        $task1 = Task::factory()->create([
+            'project_id' => $this->project->id,
+            'status' => TaskStatus::TODO,
+            'order' => 1,
+        ]);
+
+        $task2 = Task::factory()->create([
+            'project_id' => $this->project->id,
+            'status' => TaskStatus::TODO,
+            'order' => 2,
+        ]);
+
+        $payload = [
+            'tasks' => [
+                [
+                    'id' => $task1->id,
+                    'order' => 2,
+                    'status' => TaskStatus::IN_PROGRESS->value,
+                ],
+                [
+                    'id' => $task2->id,
+                    'order' => 1,
+                    'status' => TaskStatus::TODO->value,
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->user1)
+            ->postJson("/api/v1/projects/{$this->project->id}/tasks/reorder", $payload);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $task1->refresh();
+        $task2->refresh();
+
+        $this->assertEquals(TaskStatus::IN_PROGRESS, $task1->status);
+        $this->assertEquals(2, $task1->order);
+
+        $this->assertEquals(TaskStatus::TODO, $task2->status);
+        $this->assertEquals(1, $task2->order);
+    }
+
+    public function test_viewer_cannot_reorder_project_tasks(): void
+    {
+        $viewer = User::factory()->create(['role_id' => $this->user1->role_id]);
+        ProjectMember::create([
+            'project_id' => $this->project->id,
+            'user_id' => $viewer->id,
+            'role' => ProjectRole::VIEWER,
+        ]);
+
+        $task = Task::factory()->create([
+            'project_id' => $this->project->id,
+            'status' => TaskStatus::TODO,
+            'order' => 1,
+        ]);
+
+        $response = $this->actingAs($viewer)
+            ->postJson("/api/v1/projects/{$this->project->id}/tasks/reorder", [
+                'tasks' => [
+                    ['id' => $task->id, 'order' => 2, 'status' => TaskStatus::IN_PROGRESS->value],
+                ],
+            ]);
+
+        $response->assertForbidden();
+    }
 }

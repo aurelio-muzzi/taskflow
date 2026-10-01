@@ -3,13 +3,16 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import AppLayout from '../../layouts/AppLayout.vue'
 import Modal from '../../components/common/Modal.vue'
+import KanbanBoard from '../../components/kanban/KanbanBoard.vue'
 import { projectService } from '../../services/projectService'
 import { taskService } from '../../services/taskService'
 import { userService } from '../../services/userService'
+import { commentService } from '../../services/commentService'
 import { useAuthStore } from '../../stores/auth'
 import { useToast } from '../../composables/useToast'
 import type { Project, ProjectMember, ProjectRole } from '../../types/project'
 import type { Task, TaskStatus } from '../../types/task'
+import type { TaskComment } from '../../types/comment'
 import type { User } from '../../types/auth'
 import {
   ArrowLeft,
@@ -21,7 +24,10 @@ import {
   Trash2,
   Loader2,
   CheckSquare,
-  Plus
+  Plus,
+  Kanban,
+  List,
+  Send
 } from '@lucide/vue'
 
 const route = useRoute()
@@ -80,6 +86,82 @@ async function fetchProjectData() {
   } finally {
     loading.value = false
   }
+}
+
+const viewMode = ref<'kanban' | 'list'>('kanban')
+
+// Comments Modal State
+const isCommentsModalOpen = ref(false)
+const activeTaskForComments = ref<Task | null>(null)
+const comments = ref<TaskComment[]>([])
+const loadingComments = ref(false)
+const newCommentText = ref('')
+const submittingComment = ref(false)
+
+async function openCommentsModal(task: Task) {
+  activeTaskForComments.value = task
+  isCommentsModalOpen.value = true
+  loadingComments.value = true
+  try {
+    const res = await commentService.getComments(task.id)
+    if (res.data) {
+      comments.value = res.data
+    }
+  } catch {
+    toast.error('Erro ao carregar comentários.')
+  } finally {
+    loadingComments.value = false
+  }
+}
+
+async function submitComment() {
+  if (!newCommentText.value.trim() || !activeTaskForComments.value) return
+  submittingComment.value = true
+  try {
+    const res = await commentService.createComment(activeTaskForComments.value.id, newCommentText.value.trim())
+    if (res.data) {
+      comments.value.push(res.data)
+      newCommentText.value = ''
+      toast.success('Comentário publicado!')
+    }
+  } catch (error: any) {
+    const msg = error.response?.data?.message || 'Erro ao publicar comentário.'
+    toast.error(msg)
+  } finally {
+    submittingComment.value = false
+  }
+}
+
+async function removeComment(commentId: number) {
+  try {
+    await commentService.deleteComment(commentId)
+    comments.value = comments.value.filter(c => c.id !== commentId)
+    toast.success('Comentário removido.')
+  } catch (error: any) {
+    const msg = error.response?.data?.message || 'Erro ao remover comentário.'
+    toast.error(msg)
+  }
+}
+
+async function handleQuickCreateProjectTask(title: string, status: TaskStatus) {
+  try {
+    const res = await taskService.createTask(projectId, {
+      title,
+      status,
+      priority: 'medium'
+    })
+    if (res.data) {
+      tasks.value.push(res.data)
+      toast.success('Tarefa adicionada ao projeto!')
+    }
+  } catch (error: any) {
+    const msg = error.response?.data?.message || 'Erro ao criar tarefa.'
+    toast.error(msg)
+  }
+}
+
+function handleTaskClick(_task: Task) {
+  router.push(`/tasks?project_id=${projectId}`)
 }
 
 async function quickChangeTaskStatus(task: Task, newStatus: TaskStatus) {
@@ -397,75 +479,123 @@ onMounted(() => {
             </div>
           </div>
 
-          <RouterLink
-            :to="`/tasks?project_id=${projectId}`"
-            class="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs transition-colors shadow-sm"
-          >
-            <Plus class="w-3.5 h-3.5" />
-            <span>Gerenciar Tarefas</span>
-          </RouterLink>
-        </div>
-
-        <div v-if="tasks.length === 0" class="p-8 text-center text-slate-500 text-xs">
-          Nenhuma tarefa cadastrada para este projeto até o momento.
-        </div>
-
-        <div v-else class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-950/40">
-                <th class="py-3 px-5">Tarefa</th>
-                <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4">Prioridade</th>
-                <th class="py-3 px-4">Responsável</th>
-                <th class="py-3 px-4">Prazo</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800/60 text-xs">
-              <tr
-                v-for="task in tasks"
-                :key="task.id"
-                class="hover:bg-slate-800/30 transition-colors"
+          <div class="flex items-center gap-3">
+            <!-- Toggle View Mode -->
+            <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                @click="viewMode = 'kanban'"
+                :class="[
+                  'px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer',
+                  viewMode === 'kanban'
+                    ? 'bg-slate-800 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                ]"
               >
-                <td class="py-3.5 px-5">
-                  <span class="font-medium text-white block">{{ task.title }}</span>
-                  <span v-if="task.description" class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{{ task.description }}</span>
-                </td>
-                <td class="py-3.5 px-4 whitespace-nowrap">
-                  <select
-                    :value="task.status"
-                    @change="quickChangeTaskStatus(task, ($event.target as HTMLSelectElement).value as TaskStatus)"
-                    :class="[
-                      'text-[11px] font-medium px-2.5 py-1 rounded-full border cursor-pointer focus:outline-none transition-colors',
-                      getTaskStatusBadge(task.status)
-                    ]"
-                  >
-                    <option value="todo">A Fazer</option>
-                    <option value="in_progress">Em Progresso</option>
-                    <option value="review">Em Revisão</option>
-                    <option value="done">Concluída</option>
-                  </select>
-                </td>
-                <td class="py-3.5 px-4 whitespace-nowrap">
-                  <span :class="['px-2 py-0.5 rounded text-[11px] font-medium', getTaskPriorityBadge(task.priority)]">
-                    {{ task.priority_label }}
-                  </span>
-                </td>
-                <td class="py-3.5 px-4 whitespace-nowrap text-slate-300">
-                  <div v-if="task.assignee" class="flex items-center gap-1.5">
-                    <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-bold">
-                      {{ task.assignee.name.charAt(0) }}
+                <Kanban class="w-3.5 h-3.5 text-emerald-400" />
+                <span>Quadro</span>
+              </button>
+              <button
+                type="button"
+                @click="viewMode = 'list'"
+                :class="[
+                  'px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer',
+                  viewMode === 'list'
+                    ? 'bg-slate-800 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                ]"
+              >
+                <List class="w-3.5 h-3.5 text-emerald-400" />
+                <span>Lista</span>
+              </button>
+            </div>
+
+            <RouterLink
+              :to="`/tasks?project_id=${projectId}`"
+              class="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs transition-colors shadow-sm"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Gerenciar Tarefas</span>
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Kanban Board View -->
+        <div v-if="viewMode === 'kanban'" class="p-6">
+          <KanbanBoard
+            :tasks="tasks"
+            :project-id="projectId"
+            :can-edit="canManage"
+            @task-click="handleTaskClick"
+            @comments-click="openCommentsModal"
+            @quick-create="handleQuickCreateProjectTask"
+            @refresh="fetchProjectData"
+          />
+        </div>
+
+        <!-- List Table View -->
+        <div v-else>
+          <div v-if="tasks.length === 0" class="p-8 text-center text-slate-500 text-xs">
+            Nenhuma tarefa cadastrada para este projeto até o momento.
+          </div>
+
+          <div v-else class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-950/40">
+                  <th class="py-3 px-5">Tarefa</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Prioridade</th>
+                  <th class="py-3 px-4">Responsável</th>
+                  <th class="py-3 px-4">Prazo</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60 text-xs">
+                <tr
+                  v-for="task in tasks"
+                  :key="task.id"
+                  class="hover:bg-slate-800/30 transition-colors"
+                >
+                  <td class="py-3.5 px-5">
+                    <span class="font-medium text-white block">{{ task.title }}</span>
+                    <span v-if="task.description" class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{{ task.description }}</span>
+                  </td>
+                  <td class="py-3.5 px-4 whitespace-nowrap">
+                    <select
+                      :value="task.status"
+                      @change="quickChangeTaskStatus(task, ($event.target as HTMLSelectElement).value as TaskStatus)"
+                      :class="[
+                        'text-[11px] font-medium px-2.5 py-1 rounded-full border cursor-pointer focus:outline-none transition-colors',
+                        getTaskStatusBadge(task.status)
+                      ]"
+                    >
+                      <option value="todo">A Fazer</option>
+                      <option value="in_progress">Em Progresso</option>
+                      <option value="review">Em Revisão</option>
+                      <option value="done">Concluída</option>
+                    </select>
+                  </td>
+                  <td class="py-3.5 px-4 whitespace-nowrap">
+                    <span :class="['px-2 py-0.5 rounded text-[11px] font-medium', getTaskPriorityBadge(task.priority)]">
+                      {{ task.priority_label }}
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 whitespace-nowrap text-slate-300">
+                    <div v-if="task.assignee" class="flex items-center gap-1.5">
+                      <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-bold">
+                        {{ task.assignee.name.charAt(0) }}
+                      </div>
+                      <span>{{ task.assignee.name }}</span>
                     </div>
-                    <span>{{ task.assignee.name }}</span>
-                  </div>
-                  <span v-else class="text-slate-500 italic text-[11px]">Não atribuído</span>
-                </td>
-                <td class="py-3.5 px-4 whitespace-nowrap text-slate-400 text-[11px]">
-                  {{ task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR') : '—' }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                    <span v-else class="text-slate-500 italic text-[11px]">Não atribuído</span>
+                  </td>
+                  <td class="py-3.5 px-4 whitespace-nowrap text-slate-400 text-[11px]">
+                    {{ task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR') : '—' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -532,6 +662,84 @@ onMounted(() => {
             <span>Adicionar à Equipe</span>
           </button>
         </template>
+      </Modal>
+
+      <!-- Modal de Comentários da Tarefa -->
+      <Modal
+        :show="isCommentsModalOpen"
+        :title="`Comentários: ${activeTaskForComments?.title || ''}`"
+        max-width="lg"
+        @close="isCommentsModalOpen = false"
+      >
+        <div class="space-y-4">
+          <!-- Lista de Comentários -->
+          <div class="max-h-80 overflow-y-auto space-y-3 pr-1">
+            <div v-if="loadingComments" class="flex flex-col items-center justify-center p-8 text-slate-500">
+              <Loader2 class="w-6 h-6 animate-spin text-emerald-400 mb-2" />
+              <span class="text-xs">Carregando comentários...</span>
+            </div>
+
+            <div v-else-if="comments.length === 0" class="p-8 text-center text-xs text-slate-500">
+              Nenhum comentário registrado ainda. Seja o primeiro a comentar!
+            </div>
+
+            <div
+              v-else
+              v-for="comm in comments"
+              :key="comm.id"
+              class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1.5"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center font-bold text-[10px] text-slate-300">
+                    {{ comm.user?.name ? comm.user.name.charAt(0).toUpperCase() : 'U' }}
+                  </div>
+                  <span class="font-semibold text-white">{{ comm.user?.name || 'Usuário' }}</span>
+                  <span class="text-[10px] text-slate-500">
+                    {{ new Date(comm.created_at).toLocaleString('pt-BR') }}
+                  </span>
+                </div>
+
+                <button
+                  v-if="comm.user_id === authStore.user?.id || authStore.isAdmin"
+                  @click="removeComment(comm.id)"
+                  title="Excluir Comentário"
+                  class="text-slate-500 hover:text-rose-400 p-1 rounded transition-colors"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <p class="text-slate-300 whitespace-pre-line pl-8">{{ comm.content }}</p>
+            </div>
+          </div>
+
+          <!-- Formulário de Novo Comentário -->
+          <form @submit.prevent="submitComment" class="space-y-3 pt-3 border-t border-slate-800">
+            <div>
+              <textarea
+                v-model="newCommentText"
+                rows="2"
+                required
+                placeholder="Escreva um comentário ou atualização sobre esta tarefa..."
+                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              ></textarea>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] text-slate-500">Pressione Enviar para registrar.</span>
+              <button
+                type="submit"
+                :disabled="submittingComment || !newCommentText.trim()"
+                class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold text-xs rounded-xl shadow-sm transition-colors"
+              >
+                <Loader2 v-if="submittingComment" class="w-3.5 h-3.5 animate-spin" />
+                <Send v-else class="w-3.5 h-3.5" />
+                <span>Comentar</span>
+              </button>
+            </div>
+          </form>
+        </div>
       </Modal>
     </div>
   </AppLayout>

@@ -75,10 +75,23 @@ class TaskPolicy
 
     /**
      * Determina se o usuário pode atualizar o status de uma tarefa.
+     * Owner, Manager, criador, atribuído ou qualquer Member do projeto (Viewer não pode).
      */
     public function updateStatus(User $user, Task $task): bool
     {
-        return $this->update($user, $task);
+        $project = $task->project;
+
+        if ($project->owner_id === $user->id) {
+            return true;
+        }
+
+        if ($task->created_by === $user->id || $task->assigned_to === $user->id) {
+            return true;
+        }
+
+        $role = $project->getUserRole($user);
+
+        return in_array($role, [ProjectRole::OWNER, ProjectRole::MANAGER, ProjectRole::MEMBER], true);
     }
 
     /**

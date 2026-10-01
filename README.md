@@ -199,6 +199,6 @@ npm run build
 - [x] **Etapa 4:** Gerenciamento completo de Tarefas, status e prioridades.
 - [x] **Etapa 5:** Comentários, Notificações internas e Trilha de Auditoria.
 - [x] **Etapa 6:** Dashboard interativo, busca e filtros combinados.
-- [ ] **Etapa 7:** Visão Kanban com drag-and-drop e refinamentos de UX.
+- [x] **Etapa 7:** Visão Kanban com drag-and-drop e refinamentos de UX.
 - [ ] **Etapa 8:** Cobertura de testes end-to-end, documentação técnica em `/docs` e CI/CD.
 - [ ] **Etapa 9:** Revisão final de portfólio e auditoria de segurança.
