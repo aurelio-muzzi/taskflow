@@ -3,9 +3,62 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'home',
-    component: () => import('../views/HomeView.vue'),
-    meta: { title: 'TaskFlow - Gestão Inteligente de Projetos' }
+    redirect: () => {
+      const token = localStorage.getItem('taskflow_token')
+      return token ? '/dashboard' : '/login'
+    }
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/auth/LoginView.vue'),
+    meta: { title: 'Login — TaskFlow', guestOnly: true }
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('../views/DashboardView.vue'),
+    meta: { title: 'Dashboard — TaskFlow', requiresAuth: true }
+  },
+  {
+    path: '/users',
+    name: 'users',
+    component: () => import('../views/users/UserListView.vue'),
+    meta: { title: 'Gestão de Usuários — TaskFlow', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('../views/profile/ProfileView.vue'),
+    meta: { title: 'Meu Perfil — TaskFlow', requiresAuth: true }
+  },
+  {
+    path: '/projects',
+    name: 'projects',
+    component: () => import('../views/projects/ProjectListView.vue'),
+    meta: { title: 'Projetos — TaskFlow', requiresAuth: true }
+  },
+  {
+    path: '/projects/:id',
+    name: 'project-detail',
+    component: () => import('../views/projects/ProjectDetailView.vue'),
+    meta: { title: 'Detalhes do Projeto — TaskFlow', requiresAuth: true }
+  },
+  {
+    path: '/tasks',
+    name: 'tasks',
+    component: () => import('../views/tasks/TaskListView.vue'),
+    meta: { title: 'Tarefas — TaskFlow', requiresAuth: true }
+  },
+  {
+    path: '/audit-logs',
+    name: 'audit-logs',
+    component: () => import('../views/audit/AuditLogListView.vue'),
+    meta: { title: 'Trilha de Auditoria — TaskFlow', requiresAuth: true, requiresManagerOrAdmin: true }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/dashboard'
   }
 ]
 
@@ -18,6 +71,31 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.title) {
     document.title = String(to.meta.title)
   }
+
+  const token = localStorage.getItem('taskflow_token')
+  const rawUser = localStorage.getItem('taskflow_user')
+  const user = rawUser ? JSON.parse(rawUser) : null
+
+  // Rota exige autenticação
+  if (to.meta.requiresAuth && !token) {
+    return next({ name: 'login' })
+  }
+
+  // Rota de visitante (ex: login) redireciona quem já está autenticado
+  if (to.meta.guestOnly && token) {
+    return next({ name: 'dashboard' })
+  }
+
+  // Rota exige privilégio de Administrador
+  if (to.meta.requiresAdmin && user?.role?.slug !== 'admin') {
+    return next({ name: 'dashboard' })
+  }
+
+  // Rota exige privilégio de Administrador ou Gerente
+  if (to.meta.requiresManagerOrAdmin && !['admin', 'manager'].includes(user?.role?.slug)) {
+    return next({ name: 'dashboard' })
+  }
+
   next()
 })
 
