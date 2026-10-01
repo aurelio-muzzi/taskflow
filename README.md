@@ -195,7 +195,7 @@ npm run build
 
 - [x] **Etapa 1:** Estrutura base do projeto, Docker Compose, Laravel 12 API, PostgreSQL e SPA Vue 3.
 - [x] **Etapa 2:** Autenticação (Sanctum), perfis de usuários e RBAC global.
-- [ ] **Etapa 3:** Gestão de Projetos e equipe de membros.
+- [x] **Etapa 3:** Gestão de Projetos e equipe de membros.
 - [ ] **Etapa 4:** Gerenciamento completo de Tarefas, status e prioridades.
 - [ ] **Etapa 5:** Comentários, Notificações internas e Trilha de Auditoria.
 - [ ] **Etapa 6:** Dashboard interativo, busca e filtros combinados.
