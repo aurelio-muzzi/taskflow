@@ -5,7 +5,8 @@ import { useAuthStore } from '../../stores/auth'
 import { useToast } from '../../composables/useToast'
 import { notificationService } from '../../services/notificationService'
 import type { InternalNotification } from '../../types/notification'
-import { LogOut, UserCircle, Bell, CheckCheck, Clock } from '@lucide/vue'
+import GlobalSearchModal from './GlobalSearchModal.vue'
+import { LogOut, UserCircle, Bell, CheckCheck, Clock, Search } from '@lucide/vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -14,6 +15,7 @@ const toast = useToast()
 const notifications = ref<InternalNotification[]>([])
 const unreadCount = ref(0)
 const isNotificationsOpen = ref(false)
+const isSearchOpen = ref(false)
 
 async function fetchNotifications() {
   try {
@@ -63,6 +65,13 @@ function handleClickOutside(e: MouseEvent) {
   }
 }
 
+function handleGlobalKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    isSearchOpen.value = !isSearchOpen.value
+  }
+}
+
 async function handleLogout() {
   await authStore.logout()
   toast.info('Você saiu do sistema.')
@@ -72,10 +81,12 @@ async function handleLogout() {
 onMounted(() => {
   fetchNotifications()
   window.addEventListener('click', handleClickOutside)
+  window.addEventListener('keydown', handleGlobalKeydown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('keydown', handleGlobalKeydown)
 })
 </script>
 
@@ -88,7 +99,20 @@ onUnmounted(() => {
       <span class="text-slate-400 text-xs">/ TaskFlow Management</span>
     </div>
 
-    <div class="flex items-center space-x-4">
+    <div class="flex items-center space-x-3 sm:space-x-4">
+      <!-- Atalho para Busca Global -->
+      <button
+        @click="isSearchOpen = true"
+        class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 hover:text-white hover:border-slate-700 transition-colors"
+        title="Buscar (Ctrl+K)"
+      >
+        <Search class="w-3.5 h-3.5 text-slate-500" />
+        <span class="hidden sm:inline">Buscar...</span>
+        <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-500 bg-slate-900 border border-slate-800 rounded">
+          Ctrl+K
+        </kbd>
+      </button>
+
       <!-- Sino de Notificações com Dropdown -->
       <div id="notifications-wrapper" class="relative">
         <button
@@ -183,5 +207,8 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
+
+    <!-- Modal de Busca Global Spotlight -->
+    <GlobalSearchModal :show="isSearchOpen" @close="isSearchOpen = false" />
   </header>
 </template>
