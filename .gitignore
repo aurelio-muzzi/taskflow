@@ -1,0 +1,39 @@
+# Environment
+.env
+.env.backup
+.env.production
+
+# Node & Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Vendor & Backend
+backend/vendor/
+backend/node_modules/
+backend/public/build/
+backend/public/hot
+backend/public/storage
+backend/storage/*.key
+backend/storage/logs/*.log
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/.phpunit.result.cache
+
+# Docker
+docker/data/
+
+# Logs & Temp
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE & Editors
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.agents/
+.antigravity/
