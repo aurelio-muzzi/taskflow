@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Tasks\CreateTaskAction;
 use App\Actions\Tasks\DeleteTaskAction;
+use App\Actions\Tasks\ReorderTasksAction;
 use App\Actions\Tasks\UpdateTaskAction;
 use App\Actions\Tasks\UpdateTaskStatusAction;
 use App\DTOs\Tasks\CreateTaskDTO;
+use App\DTOs\Tasks\ReorderTasksDTO;
 use App\DTOs\Tasks\UpdateTaskDTO;
 use App\DTOs\Tasks\UpdateTaskStatusDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\Tasks\CreateTaskRequest;
+use App\Http\Requests\V1\Tasks\ReorderTasksRequest;
 use App\Http\Requests\V1\Tasks\UpdateTaskRequest;
 use App\Http\Requests\V1\Tasks\UpdateTaskStatusRequest;
 use App\Http\Resources\V1\TaskResource;
@@ -190,6 +193,21 @@ class TaskController extends Controller
         return ApiResponse::success(
             data: null,
             message: 'Tarefa removida com sucesso.'
+        );
+    }
+
+    /**
+     * Reordena tarefas e atualiza status em lote no quadro Kanban.
+     */
+    public function reorder(ReorderTasksRequest $request, Project $project, ReorderTasksAction $action): JsonResponse
+    {
+        $dto = ReorderTasksDTO::fromRequest($request->validated());
+
+        $updatedTasks = $action->execute($project, $dto);
+
+        return ApiResponse::success(
+            data: TaskResource::collection($updatedTasks),
+            message: 'Tarefas reordenadas com sucesso.'
         );
     }
 }

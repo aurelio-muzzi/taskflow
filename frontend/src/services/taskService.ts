@@ -52,6 +52,14 @@ export const taskService = {
   },
 
   /**
+   * Reordena tarefas e atualiza status em lote no quadro Kanban.
+   */
+  async reorderTasks(projectId: number, tasks: Array<{ id: number; order: number; status?: TaskStatus }>): Promise<ApiResponse<Task[]>> {
+    const response = await api.post<ApiResponse<Task[]>>(`/projects/${projectId}/tasks/reorder`, { tasks })
+    return response.data
+  },
+
+  /**
    * Remove (soft delete) uma tarefa.
    */
   async deleteTask(id: number): Promise<ApiResponse<null>> {

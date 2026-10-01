@@ -4,6 +4,7 @@ import { useRoute, RouterLink } from 'vue-router'
 import AppLayout from '../../layouts/AppLayout.vue'
 import Modal from '../../components/common/Modal.vue'
 import Pagination from '../../components/common/Pagination.vue'
+import KanbanBoard from '../../components/kanban/KanbanBoard.vue'
 import { taskService } from '../../services/taskService'
 import { projectService } from '../../services/projectService'
 import { userService } from '../../services/userService'
@@ -26,7 +27,9 @@ import {
   Loader2,
   AlertTriangle,
   MessageSquare,
-  Send
+  Send,
+  Kanban,
+  List
 } from '@lucide/vue'
 
 const route = useRoute()
@@ -94,9 +97,22 @@ const loading = ref(true)
 const pagination = reactive<PaginationMeta>({
   current_page: 1,
   last_page: 1,
-  per_page: 15,
+  per_page: 100,
   total: 0
 })
+
+const viewMode = ref<'kanban' | 'list'>('kanban')
+
+function setViewMode(mode: 'kanban' | 'list') {
+  viewMode.value = mode
+  if (mode === 'kanban') {
+    filters.status = ''
+    pagination.per_page = 100
+  } else {
+    pagination.per_page = 15
+  }
+  fetchTasks(1)
+}
 
 const filters = reactive({
   q: '',
@@ -204,6 +220,29 @@ function openCreateModal() {
   taskForm.due_date = ''
   taskForm.estimated_hours = null
   isModalOpen.value = true
+}
+
+async function handleKanbanQuickCreate(title: string, status: TaskStatus) {
+  const targetProjectId = filters.project_id || (projects.value.length > 0 ? projects.value[0].id : null)
+  if (!targetProjectId) {
+    toast.warning('Selecione um projeto nos filtros acima para adicionar uma tarefa diretamente no quadro.')
+    return
+  }
+
+  try {
+    const res = await taskService.createTask(targetProjectId, {
+      title,
+      status,
+      priority: 'medium'
+    })
+    if (res.data) {
+      toast.success('Tarefa criada no quadro!')
+      fetchTasks(1)
+    }
+  } catch (error: any) {
+    const msg = error.response?.data?.message || 'Erro ao criar tarefa.'
+    toast.error(msg)
+  }
 }
 
 function openEditModal(task: Task) {
@@ -365,19 +404,51 @@ onMounted(() => {
           </p>
         </div>
 
-        <button
-          @click="openCreateModal"
-          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs rounded-xl shadow-lg shadow-emerald-500/10 transition-all duration-150"
-        >
-          <Plus class="w-4 h-4" />
-          Nova Tarefa
-        </button>
+        <div class="flex items-center gap-3">
+          <!-- Toggle View Mode -->
+          <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button
+              type="button"
+              @click="setViewMode('kanban')"
+              :class="[
+                'px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer',
+                viewMode === 'kanban'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              ]"
+            >
+              <Kanban class="w-3.5 h-3.5 text-emerald-400" />
+              <span>Quadro</span>
+            </button>
+            <button
+              type="button"
+              @click="setViewMode('list')"
+              :class="[
+                'px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer',
+                viewMode === 'list'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              ]"
+            >
+              <List class="w-3.5 h-3.5 text-emerald-400" />
+              <span>Lista</span>
+            </button>
+          </div>
+
+          <button
+            @click="openCreateModal"
+            class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs rounded-xl shadow-lg shadow-emerald-500/10 transition-all duration-150 cursor-pointer"
+          >
+            <Plus class="w-4 h-4" />
+            <span>Nova Tarefa</span>
+          </button>
+        </div>
       </div>
 
       <!-- Barra de Filtros e Busca -->
       <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 shadow-sm space-y-4">
-        <!-- Status Tabs -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-800">
+        <!-- Status Tabs (Apenas na Visão Lista) -->
+        <div v-if="viewMode === 'list'" class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-800">
           <button
             v-for="tab in statusTabs"
             :key="tab.value"
@@ -452,8 +523,23 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Tabela / Lista de Tarefas -->
-      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      <!-- Visualização em Quadro Kanban -->
+      <div v-if="viewMode === 'kanban'" class="pt-1">
+        <KanbanBoard
+          :tasks="tasks"
+          :project-id="filters.project_id"
+          :can-edit="true"
+          :loading="loading"
+          :show-project-badge="!filters.project_id"
+          @task-click="openEditModal"
+          @comments-click="openCommentsModal"
+          @quick-create="handleKanbanQuickCreate"
+          @refresh="fetchTasks(1)"
+        />
+      </div>
+
+      <!-- Tabela / Lista de Tarefas (Visão Lista) -->
+      <div v-else class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
         <div v-if="loading" class="flex flex-col items-center justify-center p-12 text-slate-400">
           <Loader2 class="w-8 h-8 animate-spin mb-3 text-emerald-400" />
           <span class="text-xs">Carregando tarefas...</span>
