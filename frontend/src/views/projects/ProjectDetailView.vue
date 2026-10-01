@@ -4,10 +4,12 @@ import { useRoute, useRouter, RouterLink } from 'vue-router'
 import AppLayout from '../../layouts/AppLayout.vue'
 import Modal from '../../components/common/Modal.vue'
 import { projectService } from '../../services/projectService'
+import { taskService } from '../../services/taskService'
 import { userService } from '../../services/userService'
 import { useAuthStore } from '../../stores/auth'
 import { useToast } from '../../composables/useToast'
 import type { Project, ProjectMember, ProjectRole } from '../../types/project'
+import type { Task, TaskStatus } from '../../types/task'
 import type { User } from '../../types/auth'
 import {
   ArrowLeft,
@@ -18,7 +20,8 @@ import {
   Shield,
   Trash2,
   Loader2,
-  CheckSquare
+  CheckSquare,
+  Plus
 } from '@lucide/vue'
 
 const route = useRoute()
@@ -30,6 +33,7 @@ const projectId = Number(route.params.id)
 const project = ref<Project | null>(null)
 const members = ref<ProjectMember[]>([])
 const allUsers = ref<User[]>([])
+const tasks = ref<Task[]>([])
 const loading = ref(true)
 
 // Add Member Modal State
@@ -55,9 +59,10 @@ const availableUsersToAdd = computed(() => {
 async function fetchProjectData() {
   loading.value = true
   try {
-    const [projRes, membersRes] = await Promise.all([
+    const [projRes, membersRes, tasksRes] = await Promise.all([
       projectService.getProject(projectId),
       projectService.getMembers(projectId),
+      taskService.getProjectTasks(projectId, { all: true }),
     ])
 
     if (projRes.success && projRes.data) {
@@ -66,11 +71,47 @@ async function fetchProjectData() {
     if (membersRes.success && membersRes.data) {
       members.value = membersRes.data
     }
+    if (tasksRes.success && tasksRes.data) {
+      tasks.value = Array.isArray(tasksRes.data) ? tasksRes.data : tasksRes.data.items
+    }
   } catch {
     toast.error('Erro ao carregar detalhes do projeto.')
     router.push('/projects')
   } finally {
     loading.value = false
+  }
+}
+
+async function quickChangeTaskStatus(task: Task, newStatus: TaskStatus) {
+  try {
+    await taskService.updateTaskStatus(task.id, newStatus)
+    task.status = newStatus
+    toast.success('Status da tarefa atualizado com sucesso!')
+  } catch {
+    toast.error('Erro ao atualizar status da tarefa.')
+  }
+}
+
+function getTaskStatusBadge(status: TaskStatus) {
+  switch (status) {
+    case 'todo':
+      return 'bg-slate-800 text-slate-300 border-slate-700'
+    case 'in_progress':
+      return 'bg-blue-950 text-blue-400 border-blue-800'
+    case 'review':
+      return 'bg-purple-950 text-purple-400 border-purple-800'
+    case 'done':
+      return 'bg-emerald-950 text-emerald-400 border-emerald-800'
+  }
+}
+
+function getTaskPriorityBadge(priority: string) {
+  switch (priority) {
+    case 'low': return 'text-slate-400 bg-slate-800'
+    case 'medium': return 'text-amber-400 bg-amber-950/60'
+    case 'high': return 'text-orange-400 bg-orange-950/60'
+    case 'urgent': return 'text-rose-400 bg-rose-950/60 font-semibold'
+    default: return 'text-slate-400 bg-slate-800'
   }
 }
 
@@ -336,15 +377,96 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Preview of Tasks Module for Stage 4 -->
-      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
-        <div class="flex items-center space-x-2">
-          <CheckSquare class="w-5 h-5 text-emerald-400" />
-          <h3 class="text-sm font-semibold text-white">Tarefas deste Projeto</h3>
+      <!-- Tasks of this Project (Stage 4) -->
+      <div class="rounded-2xl bg-slate-900/60 border border-slate-800 overflow-hidden space-y-0">
+        <div class="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800">
+          <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <CheckSquare class="w-5 h-5" />
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-semibold text-white">Tarefas do Projeto</h3>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-300">
+                  {{ tasks.length }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">
+                Demandas ativas, estimativas e acompanhamento de status da equipe.
+              </p>
+            </div>
+          </div>
+
+          <RouterLink
+            :to="`/tasks?project_id=${projectId}`"
+            class="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs transition-colors shadow-sm"
+          >
+            <Plus class="w-3.5 h-3.5" />
+            <span>Gerenciar Tarefas</span>
+          </RouterLink>
         </div>
-        <p class="text-xs text-slate-400">
-          A criação, acompanhamento de status, prioridades, apontamento de horas e o quadro Kanban das tarefas serão ativados na <strong>Etapa 4</strong>.
-        </p>
+
+        <div v-if="tasks.length === 0" class="p-8 text-center text-slate-500 text-xs">
+          Nenhuma tarefa cadastrada para este projeto até o momento.
+        </div>
+
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-950/40">
+                <th class="py-3 px-5">Tarefa</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Prioridade</th>
+                <th class="py-3 px-4">Responsável</th>
+                <th class="py-3 px-4">Prazo</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 text-xs">
+              <tr
+                v-for="task in tasks"
+                :key="task.id"
+                class="hover:bg-slate-800/30 transition-colors"
+              >
+                <td class="py-3.5 px-5">
+                  <span class="font-medium text-white block">{{ task.title }}</span>
+                  <span v-if="task.description" class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{{ task.description }}</span>
+                </td>
+                <td class="py-3.5 px-4 whitespace-nowrap">
+                  <select
+                    :value="task.status"
+                    @change="quickChangeTaskStatus(task, ($event.target as HTMLSelectElement).value as TaskStatus)"
+                    :class="[
+                      'text-[11px] font-medium px-2.5 py-1 rounded-full border cursor-pointer focus:outline-none transition-colors',
+                      getTaskStatusBadge(task.status)
+                    ]"
+                  >
+                    <option value="todo">A Fazer</option>
+                    <option value="in_progress">Em Progresso</option>
+                    <option value="review">Em Revisão</option>
+                    <option value="done">Concluída</option>
+                  </select>
+                </td>
+                <td class="py-3.5 px-4 whitespace-nowrap">
+                  <span :class="['px-2 py-0.5 rounded text-[11px] font-medium', getTaskPriorityBadge(task.priority)]">
+                    {{ task.priority_label }}
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 whitespace-nowrap text-slate-300">
+                  <div v-if="task.assignee" class="flex items-center gap-1.5">
+                    <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-bold">
+                      {{ task.assignee.name.charAt(0) }}
+                    </div>
+                    <span>{{ task.assignee.name }}</span>
+                  </div>
+                  <span v-else class="text-slate-500 italic text-[11px]">Não atribuído</span>
+                </td>
+                <td class="py-3.5 px-4 whitespace-nowrap text-slate-400 text-[11px]">
+                  {{ task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR') : '—' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Add Member Modal -->
