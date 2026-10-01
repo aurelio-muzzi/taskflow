@@ -35,13 +35,14 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/projects',
     name: 'projects',
-    component: () => import('../views/PlaceholderView.vue'),
-    props: {
-      title: 'Módulo de Projetos',
-      stage: 'Etapa 3',
-      description: 'Gestão de projetos, cronogramas, membros de equipe e controle de status.'
-    },
+    component: () => import('../views/projects/ProjectListView.vue'),
     meta: { title: 'Projetos — TaskFlow', requiresAuth: true }
+  },
+  {
+    path: '/projects/:id',
+    name: 'project-detail',
+    component: () => import('../views/projects/ProjectDetailView.vue'),
+    meta: { title: 'Detalhes do Projeto — TaskFlow', requiresAuth: true }
   },
   {
     path: '/tasks',
