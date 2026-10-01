@@ -1,6 +1,5 @@
 # TaskFlow — Sistema Fullstack de Gestão de Tarefas e Projetos
 
-[![CI](https://github.com/aurelio/taskflow/actions/workflows/ci.yml/badge.svg)](https://github.com/aurelio/taskflow/actions)
 [![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php)](https://php.net)
 [![Laravel Version](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel)](https://laravel.com)
 [![Vue Version](https://img.shields.io/badge/Vue.js-3.5-4FC08D?logo=vuedotjs)](https://vuejs.org)
@@ -195,8 +194,8 @@ npm run build
 ## 8. Roadmap de Implementação
 
 - [x] **Etapa 1:** Estrutura base do projeto, Docker Compose, Laravel 12 API, PostgreSQL e SPA Vue 3.
-- [ ] **Etapa 2:** Autenticação (Sanctum), perfis de usuários e RBAC global.
-- [ ] **Etapa 3:** Gestão de Projetos e equipe de membros.
+- [x] **Etapa 2:** Autenticação (Sanctum), perfis de usuários e RBAC global.
+- [x] **Etapa 3:** Gestão de Projetos e equipe de membros.
 - [ ] **Etapa 4:** Gerenciamento completo de Tarefas, status e prioridades.
 - [ ] **Etapa 5:** Comentários, Notificações internas e Trilha de Auditoria.
 - [ ] **Etapa 6:** Dashboard interativo, busca e filtros combinados.
