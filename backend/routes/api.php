@@ -23,9 +23,9 @@ Route::prefix('v1')->group(function () {
     // Health check
     Route::get('/health', HealthController::class);
 
-    // Rotas públicas de Autenticação
+    // Rotas públicas de Autenticação (com rate limiting contra ataques de força bruta)
     Route::prefix('auth')->group(function () {
-        Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:15,1');
     });
 
     // Rotas autenticadas via Laravel Sanctum
