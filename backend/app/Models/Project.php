@@ -113,4 +113,12 @@ class Project extends Model
 
         return in_array($role, [ProjectRole::OWNER, ProjectRole::MANAGER], true);
     }
+
+    /**
+     * Tarefas associadas a este projeto.
+     */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
+    }
 }

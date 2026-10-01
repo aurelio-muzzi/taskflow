@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\ProjectMemberController;
 use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,17 @@ Route::prefix('v1')->group(function () {
             Route::post('/members', [ProjectMemberController::class, 'store']);
             Route::put('/members/{user}', [ProjectMemberController::class, 'update']);
             Route::delete('/members/{user}', [ProjectMemberController::class, 'destroy']);
+
+            // Tarefas escopadas ao projeto
+            Route::get('/tasks', [TaskController::class, 'indexByProject']);
+            Route::post('/tasks', [TaskController::class, 'store']);
         });
+
+        // Gestão Global de Tarefas
+        Route::get('/tasks', [TaskController::class, 'index']);
+        Route::get('/tasks/{task}', [TaskController::class, 'show']);
+        Route::put('/tasks/{task}', [TaskController::class, 'update']);
+        Route::patch('/tasks/{task}/status', [TaskController::class, 'updateStatus']);
+        Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
     });
 });
