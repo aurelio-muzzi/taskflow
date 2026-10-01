@@ -25,6 +25,12 @@ backend/.phpunit.result.cache
 # Docker
 docker/data/
 
+# Database local files
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
 # Logs & Temp
 *.log
 .DS_Store
