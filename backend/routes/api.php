@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\ProjectMemberController;
 use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\TaskCommentController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
@@ -60,5 +63,19 @@ Route::prefix('v1')->group(function () {
         Route::put('/tasks/{task}', [TaskController::class, 'update']);
         Route::patch('/tasks/{task}/status', [TaskController::class, 'updateStatus']);
         Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+
+        // Comentários de Tarefas
+        Route::get('/tasks/{task}/comments', [TaskCommentController::class, 'index']);
+        Route::post('/tasks/{task}/comments', [TaskCommentController::class, 'store']);
+        Route::delete('/comments/{comment}', [TaskCommentController::class, 'destroy']);
+
+        // Trilha de Auditoria
+        Route::get('/audit-logs', [AuditLogController::class, 'index']);
+        Route::get('/tasks/{task}/audit-logs', [AuditLogController::class, 'forTask']);
+
+        // Notificações Internas
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
     });
 });
