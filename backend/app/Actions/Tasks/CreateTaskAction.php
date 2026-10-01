@@ -5,6 +5,8 @@ namespace App\Actions\Tasks;
 use App\DTOs\Tasks\CreateTaskDTO;
 use App\Enums\TaskStatus;
 use App\Models\Task;
+use App\Services\AuditLogService;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 
 class CreateTaskAction
@@ -23,7 +25,7 @@ class CreateTaskAction
 
             $completedAt = $dto->status === TaskStatus::DONE ? now() : null;
 
-            return Task::create([
+            $task = Task::create([
                 'project_id' => $dto->projectId,
                 'created_by' => $dto->createdBy,
                 'title' => $dto->title,
@@ -36,6 +38,30 @@ class CreateTaskAction
                 'order' => $order,
                 'completed_at' => $completedAt,
             ]);
+
+            AuditLogService::log(
+                auditable: $task,
+                event: 'created',
+                description: "Tarefa '{$task->title}' foi criada.",
+                newValues: [
+                    'title' => $task->title,
+                    'status' => $task->status->value,
+                    'priority' => $task->priority->value,
+                ],
+                userId: $dto->createdBy
+            );
+
+            if ($task->assigned_to && $task->assigned_to !== $dto->createdBy) {
+                NotificationService::send(
+                    userId: $task->assigned_to,
+                    type: 'task_assigned',
+                    title: 'Nova tarefa atribuída',
+                    message: "Você foi designado para a tarefa '{$task->title}'.",
+                    data: ['task_id' => $task->id, 'project_id' => $task->project_id]
+                );
+            }
+
+            return $task;
         });
     }
 }
