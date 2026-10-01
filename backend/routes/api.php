@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ProjectController;
@@ -77,5 +78,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
         Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+
+        // Dashboard & Analytics
+        Route::get('/dashboard/metrics', [DashboardController::class, 'metrics']);
+
+        // Busca Global Combinada
+        Route::get('/search', [DashboardController::class, 'search']);
     });
 });
