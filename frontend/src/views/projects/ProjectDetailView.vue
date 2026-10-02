@@ -521,7 +521,7 @@ onMounted(() => {
         </div>
 
         <!-- Kanban Board View -->
-        <div v-if="viewMode === 'kanban'" class="p-6">
+        <div v-if="viewMode === 'kanban'" class="p-6 min-w-0">
           <KanbanBoard
             :tasks="tasks"
             :project-id="projectId"

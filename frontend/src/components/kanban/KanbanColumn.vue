@@ -106,7 +106,7 @@ const columnConfig = computed(() => {
 <template>
   <div
     :class="[
-      'flex flex-col flex-1 min-w-[300px] max-w-[380px] bg-slate-900/60 border rounded-2xl p-3 transition-colors duration-200',
+      'flex flex-col flex-1 min-w-[240px] lg:min-w-0 bg-slate-900/60 border rounded-2xl p-3 transition-colors duration-200',
       isDragTarget
         ? 'border-primary-500/80 bg-primary-500/5 ring-2 ring-primary-500/20'
         : 'border-slate-800/80 hover:border-slate-800'
@@ -147,7 +147,7 @@ const columnConfig = computed(() => {
     </div>
 
     <!-- Cards Container / Drop Zone -->
-    <div class="flex-1 overflow-y-auto space-y-2.5 min-h-[150px] pr-1 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+    <div class="flex-1 overflow-y-auto space-y-2.5 min-h-[150px] pr-1">
       <!-- Empty Column Message -->
       <div
         v-if="tasks.length === 0 && !isQuickAdding"
