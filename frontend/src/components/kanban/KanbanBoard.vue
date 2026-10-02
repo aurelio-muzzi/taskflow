@@ -191,7 +191,7 @@ function getStatusLabel(status: TaskStatus): string {
 </script>
 
 <template>
-  <div class="relative w-full">
+  <div class="relative w-full min-w-0">
     <!-- Loading Overlay -->
     <div
       v-if="loading"
@@ -204,7 +204,7 @@ function getStatusLabel(status: TaskStatus): string {
     </div>
 
     <!-- Kanban Board Grid -->
-    <div class="flex gap-4 overflow-x-auto pb-6 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent min-h-[550px]">
+    <div class="flex gap-4 overflow-x-auto pb-6 no-scrollbar min-h-[550px] w-full min-w-0">
       <KanbanColumn
         v-for="col in columns"
         :key="col.status"

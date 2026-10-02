@@ -391,7 +391,7 @@ onMounted(() => {
 
 <template>
   <AppLayout>
-    <div class="space-y-6">
+    <div class="space-y-6 w-full min-w-0">
       <!-- Header com Título e Ação -->
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -524,7 +524,7 @@ onMounted(() => {
       </div>
 
       <!-- Visualização em Quadro Kanban -->
-      <div v-if="viewMode === 'kanban'" class="pt-1">
+      <div v-if="viewMode === 'kanban'" class="pt-1 w-full min-w-0">
         <KanbanBoard
           :tasks="tasks"
           :project-id="filters.project_id"
