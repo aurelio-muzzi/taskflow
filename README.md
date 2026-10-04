@@ -159,12 +159,17 @@ taskflow/
    docker compose up -d --build
    ```
 
-4. **Execute as migrations e seed inicial de dados:**
+4. **Inicie os containers:**
+   ```bash
+   docker compose exec app composer install
+   ```
+   
+5. **Execute as migrations e seed inicial de dados:**
    ```bash
    docker compose exec app php artisan migrate --seed
    ```
 
-5. **Acesse as interfaces:**
+6. **Acesse as interfaces:**
    * **Frontend SPA:** [http://localhost:5173](http://localhost:5173)
    * **Backend API Healthcheck:** [http://localhost:8080/api/v1/health](http://localhost:8080/api/v1/health)
 
