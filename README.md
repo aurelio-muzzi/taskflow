@@ -163,13 +163,18 @@ taskflow/
    ```bash
    docker compose exec app composer install
    ```
+
+5. **Instale a chave de app key do Laravel:**
+   ```bash
+   docker compose exec app php artisan key:generate
+   ```
    
-5. **Execute as migrations e seed inicial de dados:**
+6. **Execute as migrations e seed inicial de dados:**
    ```bash
    docker compose exec app php artisan migrate --seed
    ```
 
-6. **Acesse as interfaces:**
+7. **Acesse as interfaces:**
    * **Frontend SPA:** [http://localhost:5173](http://localhost:5173)
    * **Backend API Healthcheck:** [http://localhost:8080/api/v1/health](http://localhost:8080/api/v1/health)
 
@@ -181,9 +186,9 @@ Após rodar o seed do banco de dados, você pode acessar o sistema com os seguin
 
 | Papel (Role) | E-mail | Senha Padrão | Escopo de Acesso |
 | :--- | :--- | :--- | :--- |
-| **Administrador** | `admin@taskflow.dev` | `password` | Acesso total ao sistema, gerenciamento de usuários, projetos e auditoria |
-| **Gerente** | `manager@taskflow.dev` | `password` | Criação e gestão de projetos, atribuição de tarefas e relatórios |
-| **Membro / Usuário** | `user@taskflow.dev` | `password` | Visualização de projetos atribuídos, movimentação de tarefas no Kanban |
+| **Administrador** | `admin@taskflow.dev` | `Password123!` | Acesso total ao sistema, gerenciamento de usuários, projetos e auditoria |
+| **Gerente** | `manager@taskflow.dev` | `Password123!` | Criação e gestão de projetos, atribuição de tarefas e relatórios |
+| **Membro / Usuário** | `user@taskflow.dev` | `Password123!` | Visualização de projetos atribuídos, movimentação de tarefas no Kanban |
 
 ---
 

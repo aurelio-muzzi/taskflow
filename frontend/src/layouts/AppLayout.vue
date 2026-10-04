@@ -5,13 +5,16 @@ import ToastContainer from '../components/common/ToastContainer.vue'
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-950 flex text-slate-100 overflow-x-hidden">
+  <div class="h-screen bg-slate-950 flex text-slate-100 overflow-hidden">
     <Sidebar />
-    <div class="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+    <!-- Coluna Direita (Navbar fixa + Área de Conteúdo rolável) -->
+    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
       <Navbar />
-      <main class="flex-1 p-6 sm:p-8 max-w-7xl w-full mx-auto min-w-0">
-        <slot />
-      </main>
+      <div class="flex-1 overflow-y-auto">
+        <main class="p-6 sm:p-8 w-full min-w-0">
+          <slot />
+        </main>
+      </div>
     </div>
     <ToastContainer />
   </div>
