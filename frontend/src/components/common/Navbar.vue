@@ -91,19 +91,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <header class="h-16 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
-    <div class="flex items-center space-x-2">
-      <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+  <header class="h-16 shrink-0 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md px-6 flex items-center justify-between z-30">
+    <div class="flex items-center space-x-2.5">
+      <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20 font-semibold">
         Workspace
       </span>
-      <span class="text-slate-400 text-xs">/ TaskFlow Management</span>
+      <span class="text-slate-400 text-xs font-medium">/ TaskFlow Management</span>
     </div>
 
     <div class="flex items-center space-x-3 sm:space-x-4">
       <!-- Atalho para Busca Global -->
       <button
         @click="isSearchOpen = true"
-        class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 hover:text-white hover:border-slate-700 transition-colors"
+        class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 hover:text-white hover:border-slate-700 transition-colors shadow-sm"
         title="Buscar (Ctrl+K)"
       >
         <Search class="w-3.5 h-3.5 text-slate-500" />
@@ -114,25 +114,23 @@ onUnmounted(() => {
       </button>
 
       <!-- Sino de Notificações com Dropdown -->
-      <div id="notifications-wrapper" class="relative">
+      <div id="notifications-wrapper" class="relative flex items-center">
         <button
           @click.stop="toggleNotifications"
-          class="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          class="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-colors"
           title="Notificações"
         >
           <Bell class="w-4 h-4" />
           <span
             v-if="unreadCount > 0"
-            class="absolute top-1 right-1 w-4 h-4 rounded-full bg-emerald-500 text-slate-950 font-bold text-[10px] flex items-center justify-center animate-pulse"
-          >
-            {{ unreadCount > 9 ? '9+' : unreadCount }}
-          </span>
+            class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse"
+          />
         </button>
 
         <!-- Menu Flutuante de Notificações -->
         <div
           v-if="isNotificationsOpen"
-          class="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150"
+          class="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150"
         >
           <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
             <div class="flex items-center gap-2">
@@ -182,17 +180,17 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="flex items-center space-x-2 text-xs text-slate-400">
+      <div class="flex items-center space-x-2 text-xs text-slate-400 px-2.5 py-1 rounded-lg bg-slate-950/40 border border-slate-800/60">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="hidden sm:inline">Online</span>
+        <span class="hidden sm:inline font-medium">Online</span>
       </div>
 
       <div class="h-4 w-px bg-slate-800"></div>
 
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2">
         <RouterLink
           to="/profile"
-          class="flex items-center space-x-2 text-xs font-medium text-slate-300 hover:text-white transition-colors"
+          class="flex items-center space-x-2 text-xs font-medium text-slate-300 hover:text-white px-2 py-1.5 rounded-lg hover:bg-slate-800/60 transition-colors"
         >
           <UserCircle class="w-4 h-4 text-emerald-400" />
           <span class="hidden md:inline">{{ authStore.user?.email }}</span>
@@ -207,8 +205,8 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
-
-    <!-- Modal de Busca Global Spotlight -->
-    <GlobalSearchModal :show="isSearchOpen" @close="isSearchOpen = false" />
   </header>
+
+  <!-- Modal de Busca Global Spotlight -->
+  <GlobalSearchModal :show="isSearchOpen" @close="isSearchOpen = false" />
 </template>
