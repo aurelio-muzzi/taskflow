@@ -159,7 +159,7 @@ taskflow/
    docker compose up -d --build
    ```
 
-4. **Inicie os containers:**
+4. **Instale as dependências do Laravel:**
    ```bash
    docker compose exec app composer install
    ```
