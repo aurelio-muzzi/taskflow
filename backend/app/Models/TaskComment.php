@@ -32,4 +32,20 @@ class TaskComment extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Acessor para compatibilidade com atributo 'body'.
+     */
+    public function getBodyAttribute(): ?string
+    {
+        return $this->content;
+    }
+
+    /**
+     * Mutator para compatibilidade com atributo 'body'.
+     */
+    public function setBodyAttribute(?string $value): void
+    {
+        $this->attributes['content'] = $value;
+    }
 }

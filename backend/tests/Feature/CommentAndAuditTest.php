@@ -219,4 +219,98 @@ class CommentAndAuditTest extends TestCase
 
         $this->assertEquals(0, $unreadCount);
     }
+
+    public function test_comment_author_can_update_their_comment(): void
+    {
+        $comment = TaskComment::create([
+            'task_id' => $this->task->id,
+            'user_id' => $this->member->id,
+            'content' => 'Comentário original.',
+        ]);
+
+        $response = $this->actingAs($this->member)
+            ->patchJson("/api/v1/tasks/{$this->task->id}/comments/{$comment->id}", [
+                'body' => 'Comentário atualizado pelo autor.',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.content', 'Comentário atualizado pelo autor.')
+            ->assertJsonPath('data.body', 'Comentário atualizado pelo autor.');
+
+        $this->assertDatabaseHas('task_comments', [
+            'id' => $comment->id,
+            'content' => 'Comentário atualizado pelo autor.',
+        ]);
+
+        // Verifica geração do log de auditoria
+        $this->assertDatabaseHas('audit_logs', [
+            'auditable_type' => Task::class,
+            'auditable_id' => $this->task->id,
+            'event' => 'comment_updated',
+        ]);
+    }
+
+    public function test_unauthorized_user_cannot_update_others_comment(): void
+    {
+        $comment = TaskComment::create([
+            'task_id' => $this->task->id,
+            'user_id' => $this->member->id,
+            'content' => 'Texto do membro.',
+        ]);
+
+        $response = $this->actingAs($this->otherUser)
+            ->patchJson("/api/v1/tasks/{$this->task->id}/comments/{$comment->id}", [
+                'content' => 'Tentativa de alteração não autorizada.',
+            ]);
+
+        $response->assertForbidden();
+    }
+
+    public function test_user_can_mark_all_notifications_as_read_via_patch(): void
+    {
+        InternalNotification::create([
+            'user_id' => $this->member->id,
+            'type' => 'task_assigned',
+            'title' => 'Nova Tarefa',
+            'message' => 'Alocada para você.',
+        ]);
+
+        $response = $this->actingAs($this->member)->patchJson('/api/v1/notifications/read-all');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertEquals(0, InternalNotification::where('user_id', $this->member->id)->whereNull('read_at')->count());
+    }
+
+    public function test_admin_can_view_single_audit_log_and_no_sensitive_secrets_stored(): void
+    {
+        $log = AuditLog::create([
+            'user_id' => $this->admin->id,
+            'auditable_type' => Task::class,
+            'auditable_id' => $this->task->id,
+            'event' => 'status_changed',
+            'description' => 'Status alterado de TODO para IN_PROGRESS',
+            'old_values' => ['status' => 'TODO'],
+            'new_values' => ['status' => 'IN_PROGRESS'],
+            'created_at' => now(),
+        ]);
+
+        // Testar visualização por Admin
+        $response = $this->actingAs($this->admin)->getJson("/api/v1/audit-logs/{$log->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.id', $log->id)
+            ->assertJsonPath('data.event', 'status_changed');
+
+        // Testar bloqueio para usuário comum
+        $userForbidden = $this->actingAs($this->member)->getJson("/api/v1/audit-logs/{$log->id}");
+        $userForbidden->assertForbidden();
+
+        // Validar ausência de segredos ou senhas na auditoria
+        $this->assertArrayNotHasKey('password', (array) $log->old_values);
+        $this->assertArrayNotHasKey('token', (array) $log->new_values);
+    }
 }
