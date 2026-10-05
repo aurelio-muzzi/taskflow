@@ -15,6 +15,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
+use App\Http\Requests\V1\Auth\ForgotPasswordRequest;
+use App\Http\Requests\V1\Auth\ResetPasswordRequest;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
 class AuthController extends Controller
 {
     /**
@@ -90,5 +95,59 @@ class AuthController extends Controller
         ]);
 
         return ApiResponse::success(null, 'Senha alterada com sucesso.');
+    }
+
+    /**
+     * Solicita redefinição de senha e gera token de recuperação.
+     */
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
+    {
+        $email = $request->validated('email');
+        $token = Str::random(64);
+
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $email],
+            [
+                'token' => Hash::make($token),
+                'created_at' => now(),
+            ]
+        );
+
+        return ApiResponse::success([
+            'reset_token' => $token,
+            'email' => $email,
+        ], 'Token de recuperação de senha gerado com sucesso.');
+    }
+
+    /**
+     * Redefine a senha do usuário utilizando o token emitido.
+     */
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $email = $request->validated('email');
+        $token = $request->validated('token');
+
+        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+
+        if (! $record || ! Hash::check($token, $record->token)) {
+            return ApiResponse::error('Token de recuperação inválido ou expirado.', null, 422);
+        }
+
+        // Verifica expiração de 60 minutos
+        if (now()->subMinutes(60)->isAfter($record->created_at)) {
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+
+            return ApiResponse::error('Token de recuperação expirado. Solicite uma nova redefinição.', null, 422);
+        }
+
+        $user = User::where('email', $email)->firstOrFail();
+        $user->update([
+            'password' => Hash::make((string) $request->validated('password')),
+        ]);
+
+        // Invalida o token após o uso
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
+
+        return ApiResponse::success(null, 'Senha redefinida com sucesso. Você já pode autenticar-se.');
     }
 }

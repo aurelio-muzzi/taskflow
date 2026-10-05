@@ -26,6 +26,8 @@ Route::prefix('v1')->group(function () {
     // Rotas públicas de Autenticação (com rate limiting contra ataques de força bruta)
     Route::prefix('auth')->group(function () {
         Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:15,1');
+        Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:10,1');
+        Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:10,1');
     });
 
     // Rotas autenticadas via Laravel Sanctum
@@ -35,11 +37,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/me', [AuthController::class, 'me']);
             Route::put('/profile', [AuthController::class, 'updateProfile']);
-            Route::put('/change-password', [AuthController::class, 'changePassword']);
+            Route::put('/password', [AuthController::class, 'changePassword']);
+            Route::put('/change-password', [AuthController::class, 'changePassword']); // compatibilidade
         });
 
-        // Listagem de Perfis de Usuário
+        // Gestão de Perfis e Permissões (RBAC)
         Route::get('/roles', [RoleController::class, 'index']);
+        Route::get('/roles/{role}', [RoleController::class, 'show']);
+        Route::get('/permissions', [RoleController::class, 'permissions']);
 
         // Gestão de Usuários (RBAC controlado via UserPolicy)
         Route::apiResource('users', UserController::class);

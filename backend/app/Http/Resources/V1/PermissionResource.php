@@ -2,14 +2,14 @@
 
 namespace App\Http\Resources\V1;
 
-use App\Models\Role;
+use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin Role
+ * @mixin Permission
  */
-class RoleResource extends JsonResource
+class PermissionResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -21,9 +21,8 @@ class RoleResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'slug' => $this->slug instanceof \BackedEnum ? $this->slug->value : $this->slug,
+            'slug' => $this->slug,
             'description' => $this->description,
-            'permissions' => PermissionResource::collection($this->whenLoaded('permissions')),
         ];
     }
 }
