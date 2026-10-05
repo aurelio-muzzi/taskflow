@@ -194,7 +194,7 @@ class AuthTest extends TestCase
             'password' => Hash::make('CurrentPassword123!'),
         ]);
 
-        $response = $this->actingAs($user, 'sanctum')->putJson('/api/v1/auth/change-password', [
+        $response = $this->actingAs($user, 'sanctum')->putJson('/api/v1/auth/password', [
             'current_password' => 'CurrentPassword123!',
             'password' => 'NewPassword123!',
             'password_confirmation' => 'NewPassword123!',
@@ -207,5 +207,118 @@ class AuthTest extends TestCase
             ]);
 
         $this->assertTrue(Hash::check('NewPassword123!', $user->fresh()->password));
+    }
+
+    public function test_user_can_request_password_reset_token(): void
+    {
+        $user = User::factory()->create([
+            'role_id' => $this->userRole->id,
+            'email' => 'forgot@taskflow.com',
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/forgot-password', [
+            'email' => 'forgot@taskflow.com',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Token de recuperação de senha gerado com sucesso.',
+            ])
+            ->assertJsonStructure([
+                'data' => ['reset_token', 'email'],
+            ]);
+
+        $this->assertDatabaseHas('password_reset_tokens', [
+            'email' => 'forgot@taskflow.com',
+        ]);
+    }
+
+    public function test_user_can_reset_password_with_valid_token(): void
+    {
+        $user = User::factory()->create([
+            'role_id' => $this->userRole->id,
+            'email' => 'reset@taskflow.com',
+            'password' => Hash::make('OldPassword123!'),
+        ]);
+
+        // Simula solicitação prévia de token
+        $forgotResponse = $this->postJson('/api/v1/auth/forgot-password', [
+            'email' => 'reset@taskflow.com',
+        ]);
+        $token = $forgotResponse->json('data.reset_token');
+
+        // Redefine a senha com o token
+        $response = $this->postJson('/api/v1/auth/reset-password', [
+            'token' => $token,
+            'email' => 'reset@taskflow.com',
+            'password' => 'BrandNewPassword123!',
+            'password_confirmation' => 'BrandNewPassword123!',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Senha redefinida com sucesso. Você já pode autenticar-se.',
+            ]);
+
+        $this->assertTrue(Hash::check('BrandNewPassword123!', $user->fresh()->password));
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'reset@taskflow.com']);
+    }
+
+    public function test_user_cannot_reset_password_with_invalid_token(): void
+    {
+        User::factory()->create([
+            'role_id' => $this->userRole->id,
+            'email' => 'badtoken@taskflow.com',
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/reset-password', [
+            'token' => 'invalid-random-token',
+            'email' => 'badtoken@taskflow.com',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Token de recuperação inválido ou expirado.',
+            ]);
+    }
+
+    public function test_roles_and_permissions_endpoints(): void
+    {
+        $admin = User::factory()->create([
+            'role_id' => $this->adminRole->id,
+        ]);
+
+        $user = User::factory()->create([
+            'role_id' => $this->userRole->id,
+        ]);
+
+        // 1. Listagem de roles acessível a autenticados
+        $rolesResponse = $this->actingAs($user, 'sanctum')->getJson('/api/v1/roles');
+        $rolesResponse->assertStatus(200)
+            ->assertJson(['success' => true]);
+
+        // 2. Detalhes de uma role
+        $roleShowResponse = $this->actingAs($user, 'sanctum')->getJson('/api/v1/roles/'.$this->adminRole->id);
+        $roleShowResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'id' => $this->adminRole->id,
+                    'slug' => 'admin',
+                ],
+            ]);
+
+        // 3. Permissões globais restritas a ADMIN
+        $userForbidden = $this->actingAs($user, 'sanctum')->getJson('/api/v1/permissions');
+        $userForbidden->assertStatus(403);
+
+        $adminAllowed = $this->actingAs($admin, 'sanctum')->getJson('/api/v1/permissions');
+        $adminAllowed->assertStatus(200)
+            ->assertJson(['success' => true]);
     }
 }
