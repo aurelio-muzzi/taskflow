@@ -62,15 +62,11 @@ class ProjectController extends Controller
         $perPage = min(max((int) $request->input('per_page', 12), 1), 100);
         $paginated = $query->paginate($perPage);
 
-        return ApiResponse::success([
-            'items' => ProjectResource::collection($paginated->items()),
-            'pagination' => [
-                'current_page' => $paginated->currentPage(),
-                'last_page' => $paginated->lastPage(),
-                'per_page' => $paginated->perPage(),
-                'total' => $paginated->total(),
-            ],
-        ], 'Projetos listados com sucesso.');
+        return ApiResponse::paginated(
+            ProjectResource::collection($paginated->items()),
+            $paginated,
+            'Projetos listados com sucesso.'
+        );
     }
 
     /**

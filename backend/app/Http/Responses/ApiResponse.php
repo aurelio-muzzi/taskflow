@@ -40,4 +40,28 @@ class ApiResponse
 
         return response()->json($response, $status);
     }
+
+    /**
+     * Retorna uma resposta JSON paginada padronizada conforme contrato.
+     */
+    public static function paginated(mixed $items, mixed $paginator, string $message = 'List retrieved successfully.'): JsonResponse
+    {
+        $meta = [
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $paginator->total(),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => [
+                'items' => $items,
+                'pagination' => $meta,
+                'meta' => $meta,
+            ],
+            'meta' => $meta,
+        ], Response::HTTP_OK);
+    }
 }

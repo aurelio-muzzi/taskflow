@@ -20,6 +20,18 @@ class AssignMemberRequest extends FormRequest
     }
 
     /**
+     * Prepara os dados para validação mesclando parâmetro de rota se necessário.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->route('user') && ! $this->has('user_id')) {
+            $userParam = $this->route('user');
+            $userId = is_object($userParam) ? $userParam->id : (int) $userParam;
+            $this->merge(['user_id' => $userId]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, ValidationRule|array<mixed>|string>

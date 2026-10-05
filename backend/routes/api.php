@@ -55,7 +55,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('projects/{project}')->group(function () {
             Route::get('/members', [ProjectMemberController::class, 'index']);
             Route::post('/members', [ProjectMemberController::class, 'store']);
-            Route::put('/members/{user}', [ProjectMemberController::class, 'update']);
+            Route::match(['put', 'patch'], '/members/{user}', [ProjectMemberController::class, 'update']);
             Route::delete('/members/{user}', [ProjectMemberController::class, 'destroy']);
 
             // Tarefas escopadas ao projeto
