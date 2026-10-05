@@ -87,7 +87,7 @@ class DashboardMetricsService
         $tasksByUser = (clone $taskQuery)
             ->whereNotNull('assigned_to')
             ->with('assignee:id,name')
-            ->selectRaw('assigned_to, count(*) as total, sum(case when status = "done" then 1 else 0 end) as completed')
+            ->selectRaw('assigned_to, count(*) as total, sum(case when status = ? then 1 else 0 end) as completed', [TaskStatus::DONE->value])
             ->groupBy('assigned_to')
             ->limit(10)
             ->get()
