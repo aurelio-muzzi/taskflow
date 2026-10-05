@@ -102,12 +102,17 @@ const availableStatusMoves = computed(() => {
 <template>
   <div
     :class="[
-      'group relative bg-slate-900 border rounded-xl p-4 shadow-sm transition-all duration-150 select-none cursor-pointer',
+      'group relative bg-slate-900 border rounded-xl p-4 shadow-sm transition-all duration-150 select-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/50',
       isDragging
         ? 'opacity-40 border-primary-500 ring-2 ring-primary-500/30 rotate-1'
         : 'border-slate-800/80 hover:border-slate-700 hover:shadow-md hover:bg-slate-850'
     ]"
+    role="button"
+    tabindex="0"
+    :aria-label="`Tarefa: ${task.title}. Prioridade: ${priorityConfig.label}. Status: ${task.status_label || task.status}. Pressione Enter para abrir detalhes.`"
     @click="emit('click', task)"
+    @keydown.enter.self="emit('click', task)"
+    @keydown.space.prevent.self="emit('click', task)"
   >
     <!-- Card Header: Badges & Action Menu -->
     <div class="flex items-center justify-between gap-2 mb-2.5">

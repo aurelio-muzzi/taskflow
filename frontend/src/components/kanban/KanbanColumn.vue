@@ -111,6 +111,8 @@ const columnConfig = computed(() => {
         ? 'border-emerald-500/80 bg-emerald-500/5 ring-2 ring-emerald-500/20'
         : 'border-slate-800/80 hover:border-slate-800'
     ]"
+    role="region"
+    :aria-label="`Coluna ${title}, com ${tasks.length} ${tasks.length === 1 ? 'tarefa' : 'tarefas'}`"
     @dragover.prevent="emit('drag-over', $event, status)"
     @dragleave="emit('drag-leave', $event, status)"
     @drop.prevent="emit('drop', $event, status)"
