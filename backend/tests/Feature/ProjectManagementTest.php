@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ProjectRole;
 use App\Enums\RoleEnum;
+use App\Enums\UserStatus;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
@@ -283,7 +284,7 @@ class ProjectManagementTest extends TestCase
     {
         $inactiveUser = User::factory()->create([
             'role_id' => $this->manager->role_id,
-            'status' => \App\Enums\UserStatus::INACTIVE,
+            'status' => UserStatus::INACTIVE,
         ]);
 
         $payload = [

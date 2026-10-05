@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Comments\CreateTaskCommentAction;
 use App\Actions\Comments\DeleteTaskCommentAction;
+use App\Actions\Comments\UpdateTaskCommentAction;
 use App\DTOs\Comments\CreateTaskCommentDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\Comments\CreateTaskCommentRequest;
+use App\Http\Requests\V1\Comments\UpdateTaskCommentRequest;
 use App\Http\Resources\V1\TaskCommentResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Task;
@@ -14,9 +16,6 @@ use App\Models\TaskComment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-
-use App\Actions\Comments\UpdateTaskCommentAction;
-use App\Http\Requests\V1\Comments\UpdateTaskCommentRequest;
 
 class TaskCommentController extends Controller
 {

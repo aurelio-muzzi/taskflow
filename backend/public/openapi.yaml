@@ -1,0 +1,1474 @@
+openapi: 3.0.3
+info:
+  title: TaskFlow REST API
+  description: |
+    API RESTful profissional para gerenciamento de projetos, tarefas, membros, auditoria e métricas do sistema TaskFlow.
+    Autenticação baseada em tokens pessoais via Laravel Sanctum e controle de acesso baseado em papéis (RBAC).
+  version: 1.0.0
+  contact:
+    name: TaskFlow Team
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Servidor Local (Docker)
+  - url: http://localhost:8000/api/v1
+    description: Servidor Local (Artisan Serve)
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Verificação de integridade da API e banco de dados
+      responses:
+        '200':
+          description: API e serviços operacionais
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: TaskFlow API is fully operational.
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: ok
+                      environment:
+                        type: string
+                        example: local
+                      database:
+                        type: string
+                        example: connected
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Autenticação de usuário e emissão de Bearer Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@taskflow.local
+                password:
+                  type: string
+                  format: password
+                  example: password
+      responses:
+        '200':
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Auth
+      summary: Solicitação de token para redefinição de senha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: dev@taskflow.local
+      responses:
+        '200':
+          description: Token de recuperação gerado com sucesso
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Redefinição de senha com token de recuperação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - email
+                - password
+                - password_confirmation
+              properties:
+                token:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  example: NovaSenha123!
+                password_confirmation:
+                  type: string
+                  format: password
+                  example: NovaSenha123!
+      responses:
+        '200':
+          description: Senha redefinida com sucesso
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Encerramento de sessão e revogação do token atual
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sessão encerrada
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Obter dados do usuário autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dados do perfil atual
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/profile:
+    put:
+      tags:
+        - Auth
+      summary: Atualizar dados de perfil do usuário logado
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Aurelio Muzzi
+                email:
+                  type: string
+                  format: email
+                  example: aurelio@taskflow.local
+      responses:
+        '200':
+          description: Perfil atualizado
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/password:
+    put:
+      tags:
+        - Auth
+      summary: Alterar senha do usuário logado
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - current_password
+                - password
+                - password_confirmation
+              properties:
+                current_password:
+                  type: string
+                password:
+                  type: string
+                password_confirmation:
+                  type: string
+      responses:
+        '200':
+          description: Senha alterada
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /roles:
+    get:
+      tags:
+        - Roles & Permissions
+      summary: Listar papéis globais do sistema
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de papéis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+
+  /roles/{role}:
+    get:
+      tags:
+        - Roles & Permissions
+      summary: Visualizar detalhes de um papel específico
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalhes do papel
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /permissions:
+    get:
+      tags:
+        - Roles & Permissions
+      summary: Listar catálogo completo de permissões (Apenas Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Catálogo de permissões
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Listar usuários da plataforma (Apenas Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          description: Filtro por nome ou e-mail
+          schema:
+            type: string
+        - name: role_id
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 15
+      responses:
+        '200':
+          description: Lista paginada de usuários
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    post:
+      tags:
+        - Users
+      summary: Cadastrar novo usuário (Apenas Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - role_id
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                role_id:
+                  type: integer
+                status:
+                  type: string
+                  enum: [ACTIVE, INACTIVE]
+                  default: ACTIVE
+      responses:
+        '201':
+          description: Usuário criado
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/{user}:
+    get:
+      tags:
+        - Users
+      summary: Detalhes do usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dados do usuário
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - Users
+      summary: Atualizar dados de usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                role_id:
+                  type: integer
+                status:
+                  type: string
+                  enum: [ACTIVE, INACTIVE]
+      responses:
+        '200':
+          description: Usuário atualizado
+    delete:
+      tags:
+        - Users
+      summary: Exclusão lógica (Soft Delete) de usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usuário desativado/removido
+
+  /users/{user}/toggle-status:
+    patch:
+      tags:
+        - Users
+      summary: Alternar status ativo/inativo do usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Status alterado
+
+  /projects:
+    get:
+      tags:
+        - Projects
+      summary: Listar projetos com paginação e filtros
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          description: Busca por nome, código ou descrição
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PLANNING, ACTIVE, ON_HOLD, COMPLETED, ARCHIVED]
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de projetos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+    post:
+      tags:
+        - Projects
+      summary: Criar novo projeto (Admin ou Manager)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - code
+              properties:
+                name:
+                  type: string
+                  example: Sistema ERP Integrado
+                code:
+                  type: string
+                  example: ERP-2026
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum: [PLANNING, ACTIVE, ON_HOLD, COMPLETED, ARCHIVED]
+                  default: PLANNING
+                owner_id:
+                  type: integer
+                start_date:
+                  type: string
+                  format: date
+                due_date:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Projeto criado com sucesso
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /projects/{project}:
+    get:
+      tags:
+        - Projects
+      summary: Visualizar detalhes do projeto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalhes do projeto
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - Projects
+      summary: Atualizar projeto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum: [PLANNING, ACTIVE, ON_HOLD, COMPLETED, ARCHIVED]
+                owner_id:
+                  type: integer
+                start_date:
+                  type: string
+                  format: date
+                due_date:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Projeto atualizado
+    delete:
+      tags:
+        - Projects
+      summary: Excluir projeto (Soft Delete)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Projeto removido
+
+  /projects/{project}/members:
+    get:
+      tags:
+        - Project Members
+      summary: Listar membros da equipe do projeto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Membros da equipe
+    post:
+      tags:
+        - Project Members
+      summary: Adicionar usuário à equipe do projeto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - role
+              properties:
+                user_id:
+                  type: integer
+                role:
+                  type: string
+                  enum: [OWNER, MANAGER, MEMBER, VIEWER]
+      responses:
+        '201':
+          description: Membro adicionado
+
+  /projects/{project}/members/{user}:
+    put:
+      tags:
+        - Project Members
+      summary: Atualizar papel do membro no projeto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  type: string
+                  enum: [OWNER, MANAGER, MEMBER, VIEWER]
+      responses:
+        '200':
+          description: Papel atualizado
+    delete:
+      tags:
+        - Project Members
+      summary: Remover membro da equipe
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: user
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Membro removido
+
+  /projects/{project}/tasks:
+    get:
+      tags:
+        - Tasks
+      summary: Listar tarefas de um projeto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: all
+          in: query
+          description: Se true, retorna todas as tarefas sem paginação para o Kanban
+          schema:
+            type: boolean
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [todo, in_progress, review, done]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, urgent]
+      responses:
+        '200':
+          description: Lista de tarefas do projeto
+    post:
+      tags:
+        - Tasks
+      summary: Criar tarefa no projeto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  example: Desenvolver autenticação Sanctum
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum: [todo, in_progress, review, done]
+                  default: todo
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                  default: medium
+                assigned_to:
+                  type: integer
+                due_date:
+                  type: string
+                  format: date
+                estimated_hours:
+                  type: number
+                  example: 12
+      responses:
+        '201':
+          description: Tarefa criada com sucesso
+
+  /projects/{project}/tasks/reorder:
+    post:
+      tags:
+        - Tasks
+      summary: Reordenar tarefas em lote no quadro Kanban
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tasks
+              properties:
+                tasks:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - order
+                    properties:
+                      id:
+                        type: integer
+                      order:
+                        type: integer
+                      status:
+                        type: string
+                        enum: [todo, in_progress, review, done]
+      responses:
+        '200':
+          description: Tarefas reordenadas com sucesso
+
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: Listagem global de tarefas
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: project_id
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [todo, in_progress, review, done]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, urgent]
+        - name: assigned_to
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista paginada de tarefas
+
+  /tasks/{task}:
+    get:
+      tags:
+        - Tasks
+      summary: Detalhes de uma tarefa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: task
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Tarefa encontrada
+    put:
+      tags:
+        - Tasks
+      summary: Atualizar tarefa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: task
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum: [todo, in_progress, review, done]
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                assigned_to:
+                  type: integer
+                due_date:
+                  type: string
+                  format: date
+                estimated_hours:
+                  type: number
+      responses:
+        '200':
+          description: Tarefa atualizada
+    delete:
+      tags:
+        - Tasks
+      summary: Excluir tarefa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: task
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Tarefa removida
+
+  /tasks/{task}/status:
+    patch:
+      tags:
+        - Tasks
+      summary: Atualização rápida de status da tarefa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: task
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [todo, in_progress, review, done]
+                order:
+                  type: integer
+      responses:
+        '200':
+          description: Status atualizado
+
+  /tasks/{task}/comments:
+    get:
+      tags:
+        - Comments
+      summary: Listar comentários da tarefa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: task
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Comentários da demanda
+    post:
+      tags:
+        - Comments
+      summary: Adicionar comentário na tarefa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: task
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - body
+              properties:
+                body:
+                  type: string
+                  example: Testes unitários finalizados com sucesso.
+                content:
+                  type: string
+      responses:
+        '201':
+          description: Comentário criado
+
+  /tasks/{task}/comments/{comment}:
+    put:
+      tags:
+        - Comments
+      summary: Atualizar comentário (Autor ou Administrador)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: task
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: comment
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - body
+              properties:
+                body:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '200':
+          description: Comentário atualizado
+    delete:
+      tags:
+        - Comments
+      summary: Excluir comentário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: task
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: comment
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Comentário excluído
+
+  /audit-logs:
+    get:
+      tags:
+        - Audit Logs
+      summary: Listar trilha de auditoria global (Admin e Manager)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: auditable_type
+          in: query
+          schema:
+            type: string
+        - name: event
+          in: query
+          schema:
+            type: string
+            enum: [created, updated, deleted, status_changed]
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Registros de auditoria
+
+  /audit-logs/{auditLog}:
+    get:
+      tags:
+        - Audit Logs
+      summary: Detalhes de um registro de auditoria
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: auditLog
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Registro de auditoria
+
+  /tasks/{task}/audit-logs:
+    get:
+      tags:
+        - Audit Logs
+      summary: Histórico de auditoria de uma tarefa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: task
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Histórico da tarefa
+
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Listar notificações do usuário autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de notificações
+
+  /notifications/{notification}/read:
+    patch:
+      tags:
+        - Notifications
+      summary: Marcar notificação individual como lida
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notification
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Notificação lida
+
+  /notifications/read-all:
+    patch:
+      tags:
+        - Notifications
+      summary: Marcar todas as notificações do usuário como lidas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Todas notificações marcadas como lidas
+
+  /dashboard:
+    get:
+      tags:
+        - Dashboard & Search
+      summary: Indicadores e métricas de produtividade do Dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Métricas agregadas do dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardMetrics'
+
+  /dashboard/metrics:
+    get:
+      tags:
+        - Dashboard & Search
+      summary: Alias para métricas do Dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Métricas agregadas
+
+  /search:
+    get:
+      tags:
+        - Dashboard & Search
+      summary: Pesquisa global transversal em Projetos, Tarefas e Usuários
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Termo de busca (mínimo 2 caracteres)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        '200':
+          description: Resultados agregados por categoria
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum
+
+  responses:
+    ValidationError:
+      description: Erro de validação nos dados enviados (422)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: Erro de validação nos dados fornecidos.
+              errors:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+
+    UnauthorizedError:
+      description: Não autenticado ou token ausente/inválido (401)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: Não autenticado.
+
+    ForbiddenError:
+      description: Ação não autorizada pelo modelo RBAC (403)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: Você não possui permissão para executar esta ação.
+
+    NotFoundError:
+      description: Recurso solicitado não encontrado (404)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: Recurso solicitado não encontrado.
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Aurelio Muzzi
+        email:
+          type: string
+          format: email
+          example: aurelio@taskflow.local
+        role:
+          $ref: '#/components/schemas/Role'
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+          example: ACTIVE
+        created_at:
+          type: string
+          format: date-time
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Administrador
+        slug:
+          type: string
+          example: admin
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: TaskFlow Platform
+        code:
+          type: string
+          example: TSK-01
+        description:
+          type: string
+        status:
+          type: string
+          enum: [PLANNING, ACTIVE, ON_HOLD, COMPLETED, ARCHIVED]
+        owner:
+          $ref: '#/components/schemas/User'
+        members_count:
+          type: integer
+        tasks_count:
+          type: integer
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        project_id:
+          type: integer
+        title:
+          type: string
+          example: Implementar endpoint de auditoria
+        description:
+          type: string
+        status:
+          type: string
+          enum: [todo, in_progress, review, done]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        assigned_to:
+          type: integer
+        assignee:
+          $ref: '#/components/schemas/User'
+        due_date:
+          type: string
+          format: date
+        estimated_hours:
+          type: number
+        order:
+          type: integer
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    AuthSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Autenticação realizada com sucesso.
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              example: 1|eX4mpleT0k3n...
+            user:
+              $ref: '#/components/schemas/User'
+
+    PaginatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Itens listados com sucesso.
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+            pagination:
+              type: object
+              properties:
+                current_page:
+                  type: integer
+                last_page:
+                  type: integer
+                per_page:
+                  type: integer
+                total:
+                  type: integer
+        meta:
+          type: object
+          properties:
+            current_page:
+              type: integer
+            last_page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+
+    DashboardMetrics:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            total_projects:
+              type: integer
+            active_projects:
+              type: integer
+            overdue_projects:
+              type: integer
+            total_tasks:
+              type: integer
+            completed_tasks:
+              type: integer
+            pending_tasks:
+              type: integer
+            overdue_tasks:
+              type: integer
+            productivity:
+              type: object
+              properties:
+                completed_by_period:
+                  type: object
+                tasks_by_priority:
+                  type: object
+                tasks_by_status:
+                  type: object
+                tasks_by_user:
+                  type: array
+                  items:
+                    type: object

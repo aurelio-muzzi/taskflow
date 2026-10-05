@@ -3,6 +3,7 @@
 namespace App\Http\Requests\V1\Projects;
 
 use App\Enums\ProjectStatus;
+use App\Enums\UserStatus;
 use App\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -44,7 +45,7 @@ class UpdateProjectRequest extends FormRequest
                 'required',
                 'integer',
                 Rule::exists('users', 'id')
-                    ->where('status', \App\Enums\UserStatus::ACTIVE->value)
+                    ->where('status', UserStatus::ACTIVE->value)
                     ->whereNull('deleted_at'),
             ],
         ];
