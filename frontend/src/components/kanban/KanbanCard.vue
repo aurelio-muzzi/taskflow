@@ -145,7 +145,7 @@ const availableStatusMoves = computed(() => {
       >
         <button
           type="button"
-          class="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 opacity-60 group-hover:opacity-100 transition-opacity"
+          class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 opacity-80 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
           title="Mover ou opções da tarefa"
           @click="showMenu = !showMenu"
         >

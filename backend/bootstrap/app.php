@@ -21,8 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Garantir que requisições sob /api/v1 sempre recebam JSON
-        $middleware->statefulApi();
+        // API Stateless com Bearer Tokens (Laravel Sanctum)
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // Envelopamento padronizado de erros de validação

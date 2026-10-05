@@ -8,6 +8,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)](https://www.postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://www.docker.com)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Laravel%20Pint-00D26A)](https://laravel.com/docs/pint)
+[![YouTube Demo](https://img.shields.io/badge/YouTube-Vídeo_de_Demonstração-FF0000?logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=ZHRfn_voOu0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -15,6 +16,16 @@
 ## 1. Visão Geral
 
 O **TaskFlow** é uma aplicação web fullstack corporativa projetada para demonstrar engenharia de software de alto nível. Mais do que um simples gerenciador de tarefas, a plataforma implementa controle de acesso granular em dois níveis (RBAC Global + Contextual de Projeto), trilha contínua de auditoria de alterações, arquitetura orientada a Ações/Serviços, tratamento uniforme de respostas JSON, auditoria de segurança contra ataques de força bruta, e orquestração completa em Docker com esteira automatizada de CI/CD via GitHub Actions.
+
+---
+
+## 🎥 Demonstração em Vídeo
+
+Confira a visão geral das funcionalidades, interface dark mode e fluxo de tarefas no vídeo abaixo:
+
+[![Demonstração do TaskFlow no YouTube](https://img.youtube.com/vi/ZHRfn_voOu0/maxresdefault.jpg)](https://www.youtube.com/watch?v=ZHRfn_voOu0 "Clique para assistir à demonstração no YouTube")
+
+> 💡 *Clique na imagem acima para assistir ao vídeo de demonstração completo no YouTube.*
 
 ---
 
@@ -159,12 +170,22 @@ taskflow/
    docker compose up -d --build
    ```
 
-4. **Execute as migrations e seed inicial de dados:**
+4. **Instale as dependências do Laravel:**
+   ```bash
+   docker compose exec app composer install
+   ```
+
+5. **Instale a chave de app key do Laravel:**
+   ```bash
+   docker compose exec app php artisan key:generate
+   ```
+   
+6. **Execute as migrations e seed inicial de dados:**
    ```bash
    docker compose exec app php artisan migrate --seed
    ```
 
-5. **Acesse as interfaces:**
+7. **Acesse as interfaces:**
    * **Frontend SPA:** [http://localhost:5173](http://localhost:5173)
    * **Backend API Healthcheck:** [http://localhost:8080/api/v1/health](http://localhost:8080/api/v1/health)
 
@@ -176,9 +197,9 @@ Após rodar o seed do banco de dados, você pode acessar o sistema com os seguin
 
 | Papel (Role) | E-mail | Senha Padrão | Escopo de Acesso |
 | :--- | :--- | :--- | :--- |
-| **Administrador** | `admin@taskflow.dev` | `password` | Acesso total ao sistema, gerenciamento de usuários, projetos e auditoria |
-| **Gerente** | `manager@taskflow.dev` | `password` | Criação e gestão de projetos, atribuição de tarefas e relatórios |
-| **Membro / Usuário** | `user@taskflow.dev` | `password` | Visualização de projetos atribuídos, movimentação de tarefas no Kanban |
+| **Administrador** | `admin@taskflow.dev` | `Password123!` | Acesso total ao sistema, gerenciamento de usuários, projetos e auditoria |
+| **Gerente** | `manager@taskflow.dev` | `Password123!` | Criação e gestão de projetos, atribuição de tarefas e relatórios |
+| **Membro / Usuário** | `user@taskflow.dev` | `Password123!` | Visualização de projetos atribuídos, movimentação de tarefas no Kanban |
 
 ---
 

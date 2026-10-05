@@ -262,7 +262,16 @@ async function handleUpdateMemberRole(member: ProjectMember, newRole: ProjectRol
 }
 
 async function handleRemoveMember(member: ProjectMember) {
-  if (!confirm(`Deseja remover ${member.user?.name} da equipe deste projeto?`)) {
+  const confirmed = await toast.confirm(
+    `Deseja remover ${member.user?.name} da equipe deste projeto?`,
+    {
+      title: 'Remover Membro',
+      confirmText: 'Sim, remover',
+      cancelText: 'Cancelar',
+    }
+  )
+
+  if (!confirmed) {
     return
   }
 
@@ -380,8 +389,9 @@ onMounted(() => {
 
         <!-- Members Table -->
         <div class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
-          <table class="w-full text-left border-collapse">
-            <thead>
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse min-w-[620px]">
+              <thead>
               <tr class="border-b border-slate-800 bg-slate-950/40 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                 <th class="py-3 px-4">Membro</th>
                 <th class="py-3 px-4">Perfil Global</th>
@@ -456,6 +466,7 @@ onMounted(() => {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 
