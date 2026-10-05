@@ -6,11 +6,13 @@ import { useToast } from '../../composables/useToast'
 import { notificationService } from '../../services/notificationService'
 import type { InternalNotification } from '../../types/notification'
 import GlobalSearchModal from './GlobalSearchModal.vue'
-import { LogOut, UserCircle, Bell, CheckCheck, Clock, Search } from '@lucide/vue'
+import { LogOut, UserCircle, Bell, CheckCheck, Clock, Search, Menu } from '@lucide/vue'
+import { useSidebar } from '../../composables/useSidebar'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToast()
+const { toggle } = useSidebar()
 
 const notifications = ref<InternalNotification[]>([])
 const unreadCount = ref(0)
@@ -91,19 +93,29 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <header class="h-16 shrink-0 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md px-6 flex items-center justify-between z-30">
+  <header class="h-16 shrink-0 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-30">
     <div class="flex items-center space-x-2.5">
+      <!-- Botão Hamburger para Tablet e Mobile (< lg) -->
+      <button
+        @click="toggle"
+        class="lg:hidden p-2 -ml-1 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/70 transition-colors cursor-pointer"
+        title="Menu de navegação"
+        aria-label="Menu de navegação"
+      >
+        <Menu class="w-5 h-5 text-emerald-400" />
+      </button>
+
       <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20 font-semibold">
         Workspace
       </span>
-      <span class="text-slate-400 text-xs font-medium">/ TaskFlow Management</span>
+      <span class="text-slate-400 text-xs font-medium hidden md:inline">/ TaskFlow Management</span>
     </div>
 
     <div class="flex items-center space-x-3 sm:space-x-4">
       <!-- Atalho para Busca Global -->
       <button
         @click="isSearchOpen = true"
-        class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 hover:text-white hover:border-slate-700 transition-colors shadow-sm"
+        class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 hover:text-white hover:border-slate-700 transition-colors shadow-sm"
         title="Buscar (Ctrl+K)"
       >
         <Search class="w-3.5 h-3.5 text-slate-500" />
@@ -130,7 +142,7 @@ onUnmounted(() => {
         <!-- Menu Flutuante de Notificações -->
         <div
           v-if="isNotificationsOpen"
-          class="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150"
+          class="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-sm rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150"
         >
           <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
             <div class="flex items-center gap-2">

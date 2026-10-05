@@ -106,9 +106,9 @@ const columnConfig = computed(() => {
 <template>
   <div
     :class="[
-      'flex flex-col flex-1 min-w-[240px] lg:min-w-0 bg-slate-900/60 border rounded-2xl p-3 transition-colors duration-200',
+      'flex flex-col flex-1 min-w-[270px] sm:min-w-[280px] lg:min-w-0 bg-slate-900/60 border rounded-2xl p-3.5 transition-colors duration-200 snap-start',
       isDragTarget
-        ? 'border-primary-500/80 bg-primary-500/5 ring-2 ring-primary-500/20'
+        ? 'border-emerald-500/80 bg-emerald-500/5 ring-2 ring-emerald-500/20'
         : 'border-slate-800/80 hover:border-slate-800'
     ]"
     @dragover.prevent="emit('drag-over', $event, status)"
@@ -138,7 +138,7 @@ const columnConfig = computed(() => {
       <button
         v-if="canEdit"
         type="button"
-        class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+        class="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
         title="Adicionar tarefa nesta coluna"
         @click="startQuickAdd"
       >

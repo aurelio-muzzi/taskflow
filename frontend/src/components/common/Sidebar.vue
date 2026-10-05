@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useToast } from '../../composables/useToast'
+import { useSidebar } from '../../composables/useSidebar'
 import {
   LayoutDashboard,
   FolderKanban,
@@ -11,13 +12,23 @@ import {
   ShieldAlert,
   UserCircle,
   Layers,
-  LogOut
+  LogOut,
+  X
 } from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToast()
+const { isOpen, close } = useSidebar()
+
+// Fecha o drawer automaticamente ao navegar para outra rota
+watch(
+  () => route.path,
+  () => {
+    close()
+  }
+)
 
 const navSections = computed(() => [
   {
@@ -47,6 +58,7 @@ const navSections = computed(() => [
 ])
 
 async function handleLogout() {
+  close()
   await authStore.logout()
   toast.info('Você saiu do sistema.')
   router.push('/login')
@@ -54,10 +66,15 @@ async function handleLogout() {
 </script>
 
 <template>
-  <aside class="w-64 lg:w-72 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/80 flex flex-col shrink-0 h-full select-none z-30">
+  <aside
+    :class="[
+      'w-64 lg:w-72 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/80 flex flex-col shrink-0 h-full select-none z-50 fixed lg:static inset-y-0 left-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none',
+      isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+    ]"
+  >
     <!-- Brand Header -->
     <div class="h-16 flex items-center justify-between px-5 border-b border-slate-800/80 shrink-0 bg-slate-950/20">
-      <RouterLink to="/dashboard" class="flex items-center space-x-3 group">
+      <RouterLink to="/dashboard" @click="close" class="flex items-center space-x-3 group">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-200">
           <Layers class="w-5 h-5 text-slate-950" />
         </div>
@@ -67,9 +84,20 @@ async function handleLogout() {
         </div>
       </RouterLink>
 
-      <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-        v1.0
-      </span>
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+          v1.0
+        </span>
+        <!-- Botão Fechar Drawer visível em tablet e mobile -->
+        <button
+          @click="close"
+          class="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors ml-1"
+          title="Fechar navegação"
+          aria-label="Fechar navegação"
+        >
+          <X class="w-5 h-5" />
+        </button>
+      </div>
     </div>
 
     <!-- Navigation Scroll Area -->

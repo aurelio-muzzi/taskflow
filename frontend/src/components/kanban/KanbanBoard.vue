@@ -203,8 +203,8 @@ function getStatusLabel(status: TaskStatus): string {
       </div>
     </div>
 
-    <!-- Kanban Board Grid -->
-    <div class="flex gap-4 overflow-x-auto pb-6 no-scrollbar min-h-[550px] w-full min-w-0">
+    <!-- Kanban Board Grid com Rolagem Fluida e Suporte a Toque -->
+    <div class="flex gap-4 overflow-x-auto pb-4 pt-1 min-h-[550px] w-full min-w-0 snap-x snap-proximity scroll-smooth">
       <KanbanColumn
         v-for="col in columns"
         :key="col.status"
