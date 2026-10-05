@@ -130,4 +130,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(Task::class, 'created_by');
     }
+
+    /**
+     * Verifica se o usuário possui determinada permissão (Admin possui todas por padrão).
+     */
+    public function hasPermission(string $permissionSlug): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $this->role?->permissions->contains('slug', $permissionSlug) ?? false;
+    }
 }
