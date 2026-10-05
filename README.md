@@ -94,10 +94,14 @@ O repositório conta com documentação aprofundada em [`/docs`](file:///c:/Proj
 
 * 📘 [**Arquitetura Geral** (`docs/architecture.md`)](file:///c:/Projeto/taskflow/docs/architecture.md) — Visão detalhada de camadas, padrões (Actions, DTOs, Policies, Responses) e fluxo de dados.
 * 📗 [**Contrato da API REST** (`docs/api.md`)](file:///c:/Projeto/taskflow/docs/api.md) — Especificação de todos os endpoints, parâmetros, payloads de requisição e envelope uniforme de respostas.
+* 📑 [**Especificação OpenAPI 3.0** (`docs/openapi.yaml`)](file:///c:/Projeto/taskflow/docs/openapi.yaml) — Contrato OpenAPI 3.0.3 completo para Swagger, Scalar e Postman.
 * 📕 [**Matriz de RBAC & Permissões** (`docs/rbac.md`)](file:///c:/Projeto/taskflow/docs/rbac.md) — Hierarquia de papéis do sistema e papéis contextuais de projeto.
-* 📙 [**Estrutura do Banco de Dados** (`docs/database.md`)](file:///c:/Projeto/taskflow/docs/database.md) — Diagrama conceitual de tabelas, chaves estrangeiras, índices e relacionamentos.
-* 📓 [**Guia de Deploy & Operações** (`docs/deployment.md`)](file:///c:/Projeto/taskflow/docs/deployment.md) — Diretrizes para ambientes de produção, staging e manutenção.
 * 🛡️ [**Políticas de Autorização** (`docs/authorization.md`)](file:///c:/Projeto/taskflow/docs/authorization.md) — Detalhamento das regras das Laravel Policies.
+* 🔑 [**Autenticação Sanctum** (`docs/authentication.md`)](file:///c:/Projeto/taskflow/docs/authentication.md) — Fluxo de tokens, login, logout, recuperação de senhas e segurança.
+* 🧪 [**Estratégia e Guia de Testes** (`docs/testing.md`)](file:///c:/Projeto/taskflow/docs/testing.md) — Pirâmide de testes, cobertura por módulo e comandos de execução.
+* 📙 [**Estrutura do Banco de Dados** (`docs/database.md`)](file:///c:/Projeto/taskflow/docs/database.md) — Diagrama conceitual de tabelas, chaves estrangeiras, índices e relacionamentos.
+* 💻 [**Guia de Desenvolvimento** (`docs/development.md`)](file:///c:/Projeto/taskflow/docs/development.md) — Instruções para rodar sem Docker e scripts de suporte.
+* 📓 [**Guia de Deploy & Operações** (`docs/deployment.md`)](file:///c:/Projeto/taskflow/docs/deployment.md) — Diretrizes para ambientes de produção, staging e manutenção.
 
 ---
 
@@ -223,7 +227,7 @@ docker compose ps
 
 ## 9. Execução dos Testes Automatizados
 
-O sistema conta com 59 testes automatizados e 278 asserções cobrindo cenários de autenticação, RBAC, fluxos de tarefas, comentários, auditoria, notificações e testes end-to-end de ciclo de vida completo.
+O sistema conta com **88 testes automatizados e 462 asserções** cobrindo cenários de testes unitários, autenticação Sanctum, RBAC de dois níveis, fluxos de projetos e equipes, gestão e reordenação de tarefas no Kanban, comentários, auditoria, notificações e testes end-to-end (E2E) de ciclo de vida completo.
 
 ### Backend (Testes de Unidade, Feature e E2E)
 ```bash
