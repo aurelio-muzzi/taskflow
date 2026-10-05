@@ -6,18 +6,17 @@ use App\Actions\Auth\LoginAction;
 use App\DTOs\Auth\LoginDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\Auth\ChangePasswordRequest;
+use App\Http\Requests\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\V1\Auth\LoginRequest;
+use App\Http\Requests\V1\Auth\ResetPasswordRequest;
 use App\Http\Requests\V1\Auth\UpdateProfileRequest;
 use App\Http\Resources\V1\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-
-use App\Http\Requests\V1\Auth\ForgotPasswordRequest;
-use App\Http\Requests\V1\Auth\ResetPasswordRequest;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller

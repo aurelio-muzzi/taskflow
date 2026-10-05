@@ -103,16 +103,28 @@ Authorization: Bearer <seu_token_sanctum>
 * **`PUT /api/v1/auth/profile`**
   * **Autenticação:** Obrigatória (`auth:sanctum`).
   * **Payload:** `{ "name": "Nome Atualizado", "email": "novo@email.com" }`
-* **`PUT /api/v1/auth/change-password`**
+* **`PUT /api/v1/auth/password`** (ou `PUT /api/v1/auth/change-password`)
   * **Autenticação:** Obrigatória (`auth:sanctum`).
-  * **Payload:** `{ "current_password": "...", "new_password": "...", "new_password_confirmation": "..." }`
+  * **Payload:** `{ "current_password": "...", "password": "...", "password_confirmation": "..." }`
+* **`POST /api/v1/auth/forgot-password`**
+  * **Autenticação:** Pública.
+  * **Payload:** `{ "email": "usuario@taskflow.local" }`
+* **`POST /api/v1/auth/reset-password`**
+  * **Autenticação:** Pública.
+  * **Payload:** `{ "token": "...", "email": "...", "password": "...", "password_confirmation": "..." }`
 
 ---
 
-### 2.3 Perfis de Usuário (Roles)
+### 2.3 Perfis e Permissões (RBAC)
 * **`GET /api/v1/roles`**
   * **Autenticação:** Obrigatória.
   * **Retorno:** Lista de perfis globais disponíveis (`admin`, `manager`, `user`).
+* **`GET /api/v1/roles/{role}`**
+  * **Autenticação:** Obrigatória.
+  * **Retorno:** Detalhes de um perfil específico.
+* **`GET /api/v1/permissions`**
+  * **Autenticação:** Restrita a Administradores (`admin`).
+  * **Retorno:** Catálogo completo de permissões do sistema.
 
 ---
 
