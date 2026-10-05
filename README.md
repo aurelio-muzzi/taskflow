@@ -8,6 +8,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)](https://www.postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://www.docker.com)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Laravel%20Pint-00D26A)](https://laravel.com/docs/pint)
+[![YouTube Demo](https://img.shields.io/badge/YouTube-Vídeo_de_Demonstração-FF0000?logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=ZHRfn_voOu0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -15,6 +16,16 @@
 ## 1. Visão Geral
 
 O **TaskFlow** é uma aplicação web fullstack corporativa projetada para demonstrar engenharia de software de alto nível. Mais do que um simples gerenciador de tarefas, a plataforma implementa controle de acesso granular em dois níveis (RBAC Global + Contextual de Projeto), trilha contínua de auditoria de alterações, arquitetura orientada a Ações/Serviços, tratamento uniforme de respostas JSON, auditoria de segurança contra ataques de força bruta, e orquestração completa em Docker com esteira automatizada de CI/CD via GitHub Actions.
+
+---
+
+## 🎥 Demonstração em Vídeo
+
+Confira a visão geral das funcionalidades, interface dark mode e fluxo de tarefas no vídeo abaixo:
+
+[![Demonstração do TaskFlow no YouTube](https://img.youtube.com/vi/ZHRfn_voOu0/maxresdefault.jpg)](https://www.youtube.com/watch?v=ZHRfn_voOu0 "Clique para assistir à demonstração no YouTube")
+
+> 💡 *Clique na imagem acima para assistir ao vídeo de demonstração completo no YouTube.*
 
 ---
 

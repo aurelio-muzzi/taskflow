@@ -180,7 +180,16 @@ async function handleSaveProject() {
 }
 
 async function handleDeleteProject(project: Project) {
-  if (!confirm(`Tem certeza que deseja remover o projeto "${project.name}" (${project.code})? (Exclusão lógica/Soft delete)`)) {
+  const confirmed = await toast.confirm(
+    `Tem certeza que deseja remover o projeto "${project.name}" (${project.code})? (Exclusão lógica/Soft delete)`,
+    {
+      title: 'Confirmar Exclusão',
+      confirmText: 'Sim, remover',
+      cancelText: 'Cancelar',
+    }
+  )
+
+  if (!confirmed) {
     return
   }
 

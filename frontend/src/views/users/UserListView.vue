@@ -179,7 +179,16 @@ async function handleDeleteUser(user: User) {
     return
   }
 
-  if (!confirm(`Tem certeza que deseja remover o usuário ${user.name}? (Exclusão lógica/Soft delete)`)) {
+  const confirmed = await toast.confirm(
+    `Tem certeza que deseja remover o usuário ${user.name}? (Exclusão lógica/Soft delete)`,
+    {
+      title: 'Confirmar Exclusão',
+      confirmText: 'Sim, remover',
+      cancelText: 'Cancelar',
+    }
+  )
+
+  if (!confirmed) {
     return
   }
 
@@ -288,8 +297,9 @@ onMounted(() => {
           <p class="text-xs text-slate-600">Ajuste os filtros de busca para visualizar resultados.</p>
         </div>
 
-        <table v-else class="w-full text-left border-collapse">
-          <thead>
+        <div v-else class="overflow-x-auto w-full">
+          <table class="w-full text-left border-collapse min-w-[640px]">
+            <thead>
             <tr class="border-b border-slate-800 bg-slate-950/40 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               <th class="py-3.5 px-4">Usuário</th>
               <th class="py-3.5 px-4">Perfil (RBAC)</th>
@@ -380,6 +390,7 @@ onMounted(() => {
             </tr>
           </tbody>
         </table>
+        </div>
 
         <!-- Pagination -->
         <Pagination :meta="pagination" @change-page="fetchUsers" />
