@@ -33,7 +33,13 @@ class CreateProjectRequest extends FormRequest
             'status' => ['nullable', 'string', Rule::enum(ProjectStatus::class)],
             'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'owner_id' => ['nullable', 'integer', 'exists:users,id'],
+            'owner_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')
+                    ->where('status', \App\Enums\UserStatus::ACTIVE->value)
+                    ->whereNull('deleted_at'),
+            ],
             'members' => ['nullable', 'array'],
             'members.*.user_id' => ['required_with:members', 'integer', 'exists:users,id'],
             'members.*.role' => ['nullable', 'string', Rule::enum(ProjectRole::class)],
@@ -51,7 +57,7 @@ class CreateProjectRequest extends FormRequest
             'code.unique' => 'Este código de projeto já está em uso.',
             'code.alpha_dash' => 'O código do projeto deve conter apenas letras, números, hífens e sublinhados.',
             'due_date.after_or_equal' => 'A data prevista de conclusão deve ser igual ou posterior à data de início.',
-            'owner_id.exists' => 'O responsável selecionado é inválido.',
+            'owner_id.exists' => 'O responsável selecionado deve ser um usuário ativo.',
         ];
     }
 }

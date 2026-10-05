@@ -278,4 +278,99 @@ class ProjectManagementTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['user_id']);
     }
+
+    public function test_cannot_assign_inactive_user_as_project_owner(): void
+    {
+        $inactiveUser = User::factory()->create([
+            'role_id' => $this->manager->role_id,
+            'status' => \App\Enums\UserStatus::INACTIVE,
+        ]);
+
+        $payload = [
+            'name' => 'Projeto com Dono Inativo',
+            'code' => 'INACTIVE-OWNER',
+            'owner_id' => $inactiveUser->id,
+        ];
+
+        $response = $this->actingAs($this->manager, 'sanctum')->postJson('/api/v1/projects', $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['owner_id']);
+    }
+
+    public function test_owner_can_patch_project(): void
+    {
+        $project = Project::factory()->create(['owner_id' => $this->manager->id, 'status' => 'PLANNING']);
+        $project->memberRecords()->create([
+            'user_id' => $this->manager->id,
+            'role' => ProjectRole::OWNER,
+        ]);
+
+        $response = $this->actingAs($this->manager, 'sanctum')->patchJson("/api/v1/projects/{$project->id}", [
+            'status' => 'ACTIVE',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'id' => $project->id,
+                    'status' => 'ACTIVE',
+                ],
+            ]);
+
+        $this->assertEquals('ACTIVE', $project->fresh()->status->value);
+    }
+
+    public function test_manager_can_patch_member_role(): void
+    {
+        $project = Project::factory()->create(['owner_id' => $this->manager->id]);
+        $project->memberRecords()->create([
+            'user_id' => $this->manager->id,
+            'role' => ProjectRole::OWNER,
+        ]);
+        $project->memberRecords()->create([
+            'user_id' => $this->regularUser->id,
+            'role' => ProjectRole::VIEWER,
+        ]);
+
+        $response = $this->actingAs($this->manager, 'sanctum')
+            ->patchJson("/api/v1/projects/{$project->id}/members/{$this->regularUser->id}", [
+                'role' => 'MEMBER',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'user_id' => $this->regularUser->id,
+                    'role' => 'MEMBER',
+                ],
+            ]);
+
+        $this->assertEquals(ProjectRole::MEMBER, $project->fresh()->getUserRole($this->regularUser));
+    }
+
+    public function test_project_listing_contains_standardized_meta(): void
+    {
+        Project::factory()->create(['owner_id' => $this->manager->id]);
+
+        $response = $this->actingAs($this->admin, 'sanctum')->getJson('/api/v1/projects');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'items',
+                    'pagination',
+                ],
+                'meta' => [
+                    'current_page',
+                    'last_page',
+                    'per_page',
+                    'total',
+                ],
+            ]);
+    }
 }

@@ -39,7 +39,14 @@ class UpdateProjectRequest extends FormRequest
             'status' => ['sometimes', 'required', 'string', Rule::enum(ProjectStatus::class)],
             'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', $startDate ? "after_or_equal:{$startDate}" : 'nullable'],
-            'owner_id' => ['sometimes', 'required', 'integer', 'exists:users,id'],
+            'owner_id' => [
+                'sometimes',
+                'required',
+                'integer',
+                Rule::exists('users', 'id')
+                    ->where('status', \App\Enums\UserStatus::ACTIVE->value)
+                    ->whereNull('deleted_at'),
+            ],
         ];
     }
 
@@ -53,7 +60,7 @@ class UpdateProjectRequest extends FormRequest
             'code.required' => 'O código do projeto é obrigatório.',
             'code.unique' => 'Este código de projeto já está em uso.',
             'due_date.after_or_equal' => 'A data prevista de conclusão deve ser igual ou posterior à data de início.',
-            'owner_id.exists' => 'O responsável selecionado é inválido.',
+            'owner_id.exists' => 'O responsável selecionado deve ser um usuário ativo.',
         ];
     }
 }
