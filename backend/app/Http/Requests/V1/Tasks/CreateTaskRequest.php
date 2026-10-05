@@ -4,6 +4,7 @@ namespace App\Http\Requests\V1\Tasks;
 
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
+use App\Enums\UserStatus;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -42,7 +43,13 @@ class CreateTaskRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'string', Rule::enum(TaskStatus::class)],
             'priority' => ['nullable', 'string', Rule::enum(TaskPriority::class)],
-            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'assigned_to' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')
+                    ->where('status', UserStatus::ACTIVE->value)
+                    ->whereNull('deleted_at'),
+            ],
             'due_date' => ['nullable', 'date'],
             'estimated_hours' => ['nullable', 'numeric', 'min:0', 'max:999.99'],
             'order' => ['nullable', 'integer', 'min:0'],
@@ -56,7 +63,7 @@ class CreateTaskRequest extends FormRequest
     {
         return [
             'title.required' => 'O título da tarefa é obrigatório.',
-            'assigned_to.exists' => 'O usuário responsável selecionado é inválido.',
+            'assigned_to.exists' => 'O usuário responsável selecionado deve ser um usuário ativo.',
             'estimated_hours.numeric' => 'As horas estimadas devem ser um valor numérico válido.',
             'estimated_hours.min' => 'As horas estimadas não podem ser negativas.',
         ];

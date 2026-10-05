@@ -65,15 +65,11 @@ class TaskController extends Controller
         $perPage = min((int) $request->input('per_page', 15), 100);
         $tasks = $query->paginate($perPage);
 
-        return ApiResponse::success([
-            'items' => TaskResource::collection($tasks->items()),
-            'pagination' => [
-                'current_page' => $tasks->currentPage(),
-                'last_page' => $tasks->lastPage(),
-                'per_page' => $tasks->perPage(),
-                'total' => $tasks->total(),
-            ],
-        ], 'Tarefas recuperadas com sucesso.');
+        return ApiResponse::paginated(
+            TaskResource::collection($tasks->items()),
+            $tasks,
+            'Tarefas recuperadas com sucesso.'
+        );
     }
 
     /**
@@ -104,15 +100,11 @@ class TaskController extends Controller
         $perPage = min((int) $request->input('per_page', 25), 100);
         $tasks = $query->paginate($perPage);
 
-        return ApiResponse::success([
-            'items' => TaskResource::collection($tasks->items()),
-            'pagination' => [
-                'current_page' => $tasks->currentPage(),
-                'last_page' => $tasks->lastPage(),
-                'per_page' => $tasks->perPage(),
-                'total' => $tasks->total(),
-            ],
-        ], 'Tarefas do projeto recuperadas com sucesso.');
+        return ApiResponse::paginated(
+            TaskResource::collection($tasks->items()),
+            $tasks,
+            'Tarefas do projeto recuperadas com sucesso.'
+        );
     }
 
     /**

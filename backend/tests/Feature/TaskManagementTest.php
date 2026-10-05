@@ -6,6 +6,7 @@ use App\Enums\ProjectRole;
 use App\Enums\RoleEnum;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
+use App\Enums\UserStatus;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\Role;
@@ -326,5 +327,114 @@ class TaskManagementTest extends TestCase
             ]);
 
         $response->assertForbidden();
+    }
+
+    public function test_cannot_assign_inactive_user_to_task_on_create(): void
+    {
+        $inactiveUser = User::factory()->create([
+            'role_id' => $this->user1->role_id,
+            'status' => UserStatus::INACTIVE,
+        ]);
+
+        $payload = [
+            'title' => 'Tarefa com Atribuído Inativo',
+            'assigned_to' => $inactiveUser->id,
+        ];
+
+        $response = $this->actingAs($this->user1)
+            ->postJson("/api/v1/projects/{$this->project->id}/tasks", $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['assigned_to']);
+    }
+
+    public function test_cannot_assign_inactive_user_to_task_on_update(): void
+    {
+        $inactiveUser = User::factory()->create([
+            'role_id' => $this->user1->role_id,
+            'status' => UserStatus::INACTIVE,
+        ]);
+
+        $task = Task::factory()->create([
+            'project_id' => $this->project->id,
+            'created_by' => $this->manager->id,
+            'assigned_to' => $this->user1->id,
+        ]);
+
+        $response = $this->actingAs($this->user1)->putJson("/api/v1/tasks/{$task->id}", [
+            'assigned_to' => $inactiveUser->id,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['assigned_to']);
+    }
+
+    public function test_user_can_patch_task(): void
+    {
+        $task = Task::factory()->create([
+            'project_id' => $this->project->id,
+            'created_by' => $this->manager->id,
+            'assigned_to' => $this->user1->id,
+            'title' => 'Título Inicial',
+            'priority' => TaskPriority::LOW,
+        ]);
+
+        $response = $this->actingAs($this->user1)->patchJson("/api/v1/tasks/{$task->id}", [
+            'priority' => TaskPriority::URGENT->value,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.id', $task->id)
+            ->assertJsonPath('data.priority', TaskPriority::URGENT->value);
+
+        $this->assertEquals(TaskPriority::URGENT, $task->fresh()->priority);
+    }
+
+    public function test_task_listing_contains_standardized_meta(): void
+    {
+        Task::factory()->count(2)->create(['project_id' => $this->project->id]);
+
+        $response = $this->actingAs($this->admin)->getJson('/api/v1/tasks');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'items',
+                    'pagination',
+                ],
+                'meta' => [
+                    'current_page',
+                    'last_page',
+                    'per_page',
+                    'total',
+                ],
+            ]);
+    }
+
+    public function test_project_task_listing_contains_standardized_meta(): void
+    {
+        Task::factory()->count(2)->create(['project_id' => $this->project->id]);
+
+        $response = $this->actingAs($this->user1)
+            ->getJson("/api/v1/projects/{$this->project->id}/tasks");
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'items',
+                    'pagination',
+                ],
+                'meta' => [
+                    'current_page',
+                    'last_page',
+                    'per_page',
+                    'total',
+                ],
+            ]);
     }
 }
