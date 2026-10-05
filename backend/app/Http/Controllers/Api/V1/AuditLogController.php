@@ -40,15 +40,31 @@ class AuditLogController extends Controller
         $perPage = min((int) $request->input('per_page', 20), 100);
         $paginated = $query->paginate($perPage);
 
-        return ApiResponse::success([
-            'items' => AuditLogResource::collection($paginated->items()),
-            'pagination' => [
-                'current_page' => $paginated->currentPage(),
-                'last_page' => $paginated->lastPage(),
-                'per_page' => $paginated->perPage(),
-                'total' => $paginated->total(),
-            ],
-        ], 'Trilha de auditoria recuperada com sucesso.');
+        return ApiResponse::paginated(
+            items: AuditLogResource::collection($paginated->items()),
+            paginator: $paginated,
+            message: 'Trilha de auditoria recuperada com sucesso.'
+        );
+    }
+
+    /**
+     * Exibe os detalhes de um registro de auditoria específico (somente leitura).
+     */
+    public function show(Request $request, AuditLog $auditLog): JsonResponse
+    {
+        /** @var User $currentUser */
+        $currentUser = $request->user();
+
+        if (! $currentUser->isAdmin() && ! $currentUser->isManager()) {
+            return ApiResponse::error('Acesso restrito a administradores e gerentes.', null, 403);
+        }
+
+        $auditLog->load('user.role');
+
+        return ApiResponse::success(
+            data: new AuditLogResource($auditLog),
+            message: 'Registro de auditoria recuperado com sucesso.'
+        );
     }
 
     /**

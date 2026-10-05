@@ -74,15 +74,20 @@ Route::prefix('v1')->group(function () {
         // Comentários de Tarefas
         Route::get('/tasks/{task}/comments', [TaskCommentController::class, 'index']);
         Route::post('/tasks/{task}/comments', [TaskCommentController::class, 'store']);
+        Route::match(['put', 'patch'], '/tasks/{task}/comments/{comment}', [TaskCommentController::class, 'update']);
+        Route::delete('/tasks/{task}/comments/{comment}', [TaskCommentController::class, 'destroy']);
+        Route::match(['put', 'patch'], '/comments/{comment}', [TaskCommentController::class, 'update']);
         Route::delete('/comments/{comment}', [TaskCommentController::class, 'destroy']);
 
         // Trilha de Auditoria
         Route::get('/audit-logs', [AuditLogController::class, 'index']);
+        Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show']);
         Route::get('/tasks/{task}/audit-logs', [AuditLogController::class, 'forTask']);
 
         // Notificações Internas
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+        Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
         Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
 
         // Dashboard & Analytics

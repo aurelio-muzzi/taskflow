@@ -15,6 +15,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+use App\Actions\Comments\UpdateTaskCommentAction;
+use App\Http\Requests\V1\Comments\UpdateTaskCommentRequest;
+
 class TaskCommentController extends Controller
 {
     /**
@@ -56,10 +59,61 @@ class TaskCommentController extends Controller
     }
 
     /**
+     * Atualiza o conteúdo de um comentário da tarefa.
+     */
+    public function update(UpdateTaskCommentRequest $request, ...$args): JsonResponse
+    {
+        $comment = null;
+        $action = null;
+
+        foreach ($args as $arg) {
+            if ($arg instanceof TaskComment) {
+                $comment = $arg;
+            } elseif ($arg instanceof UpdateTaskCommentAction) {
+                $action = $arg;
+            }
+        }
+
+        if (! $comment) {
+            $commentId = $request->route('comment');
+            $comment = $commentId instanceof TaskComment ? $commentId : TaskComment::findOrFail($commentId);
+        }
+
+        $action ??= app(UpdateTaskCommentAction::class);
+
+        $this->authorize('update', $comment);
+
+        $updatedComment = $action->execute($comment, (string) $request->validated('content'));
+
+        return ApiResponse::success(
+            data: new TaskCommentResource($updatedComment),
+            message: 'Comentário atualizado com sucesso.'
+        );
+    }
+
+    /**
      * Remove um comentário da tarefa.
      */
-    public function destroy(Request $request, TaskComment $comment, DeleteTaskCommentAction $action): JsonResponse
+    public function destroy(Request $request, ...$args): JsonResponse
     {
+        $comment = null;
+        $action = null;
+
+        foreach ($args as $arg) {
+            if ($arg instanceof TaskComment) {
+                $comment = $arg;
+            } elseif ($arg instanceof DeleteTaskCommentAction) {
+                $action = $arg;
+            }
+        }
+
+        if (! $comment) {
+            $commentId = $request->route('comment');
+            $comment = $commentId instanceof TaskComment ? $commentId : TaskComment::findOrFail($commentId);
+        }
+
+        $action ??= app(DeleteTaskCommentAction::class);
+
         $this->authorize('delete', $comment);
 
         $action->execute($comment);

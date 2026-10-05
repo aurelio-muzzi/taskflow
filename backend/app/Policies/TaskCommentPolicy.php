@@ -27,6 +27,14 @@ class TaskCommentPolicy
     }
 
     /**
+     * O autor do comentário pode editar seu próprio comentário.
+     */
+    public function update(User $user, TaskComment $comment): bool
+    {
+        return $comment->user_id === $user->id;
+    }
+
+    /**
      * O autor do comentário, ou os gestores/proprietários do projeto, podem excluir o comentário.
      */
     public function delete(User $user, TaskComment $comment): bool

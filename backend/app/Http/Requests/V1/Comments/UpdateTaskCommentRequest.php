@@ -2,29 +2,28 @@
 
 namespace App\Http\Requests\V1\Comments;
 
-use App\Models\Task;
 use App\Models\TaskComment;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class CreateTaskCommentRequest extends FormRequest
+class UpdateTaskCommentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        $task = $this->route('task');
+        $comment = $this->route('comment');
 
-        if (! $task instanceof Task) {
-            $task = Task::find($task);
+        if (! $comment instanceof TaskComment) {
+            $comment = TaskComment::find($comment);
         }
 
-        if (! $task) {
+        if (! $comment) {
             return false;
         }
 
-        return $this->user()?->can('create', [TaskComment::class, $task]) ?? false;
+        return $this->user()?->can('update', $comment) ?? false;
     }
 
     /**
