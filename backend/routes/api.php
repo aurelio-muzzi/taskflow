@@ -91,6 +91,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
 
         // Dashboard & Analytics
+        Route::get('/dashboard', [DashboardController::class, 'metrics']);
         Route::get('/dashboard/metrics', [DashboardController::class, 'metrics']);
 
         // Busca Global Combinada

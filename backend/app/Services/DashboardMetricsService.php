@@ -36,6 +36,7 @@ class DashboardMetricsService
         $taskQuery = Task::whereIn('project_id', $accessibleProjectIds);
 
         // 1. Métricas de Projetos
+        $today = now()->format('Y-m-d');
         $totalProjects = (clone $projectQuery)->count();
         $projectsByStatus = (clone $projectQuery)
             ->selectRaw('status, count(*) as count')
@@ -43,12 +44,17 @@ class DashboardMetricsService
             ->pluck('count', 'status')
             ->toArray();
 
+        $overdueProjects = (clone $projectQuery)
+            ->whereNotIn('status', [ProjectStatus::COMPLETED->value, ProjectStatus::ARCHIVED->value])
+            ->whereNotNull('due_date')
+            ->where('due_date', '<', $today)
+            ->count();
+
         // 2. Métricas de Tarefas
         $totalTasks = (clone $taskQuery)->count();
         $completedTasks = (clone $taskQuery)->where('status', TaskStatus::DONE)->count();
         $pendingTasks = $totalTasks - $completedTasks;
 
-        $today = now()->format('Y-m-d');
         $overdueTasks = (clone $taskQuery)
             ->where('status', '!=', TaskStatus::DONE)
             ->whereNotNull('due_date')
@@ -69,7 +75,31 @@ class DashboardMetricsService
 
         $completionRate = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100, 1) : 0.0;
 
-        // 3. Métricas das tarefas atribuídas especificamente ao usuário autenticado
+        // 3. Métricas de Produtividade (RF10)
+        // Tarefas concluídas nos últimos 7 dias
+        $sevenDaysAgo = now()->subDays(7)->startOfDay();
+        $completedByPeriod = (clone $taskQuery)
+            ->where('status', TaskStatus::DONE)
+            ->where('completed_at', '>=', $sevenDaysAgo)
+            ->count();
+
+        // Tarefas agrupadas por usuário responsável
+        $tasksByUser = (clone $taskQuery)
+            ->whereNotNull('assigned_to')
+            ->with('assignee:id,name')
+            ->selectRaw('assigned_to, count(*) as total, sum(case when status = "done" then 1 else 0 end) as completed')
+            ->groupBy('assigned_to')
+            ->limit(10)
+            ->get()
+            ->map(fn ($row) => [
+                'user_id' => $row->assigned_to,
+                'user_name' => $row->assignee?->name ?? 'Desconhecido',
+                'total' => (int) $row->total,
+                'completed' => (int) $row->completed,
+            ])
+            ->toArray();
+
+        // 4. Métricas das tarefas atribuídas especificamente ao usuário autenticado
         $myTaskQuery = (clone $taskQuery)->where('assigned_to', $user->id);
         $myTotalTasks = (clone $myTaskQuery)->count();
         $myCompletedTasks = (clone $myTaskQuery)->where('status', TaskStatus::DONE)->count();
@@ -86,7 +116,7 @@ class DashboardMetricsService
             ->pluck('count', 'status')
             ->toArray();
 
-        // 4. Próximos prazos de entrega (deadlines)
+        // 5. Próximos prazos de entrega (deadlines)
         $upcomingDeadlines = (clone $taskQuery)
             ->with(['project', 'assignee.role'])
             ->where('status', '!=', TaskStatus::DONE)
@@ -95,7 +125,7 @@ class DashboardMetricsService
             ->limit(5)
             ->get();
 
-        // 5. Atividades recentes (trilha de auditoria)
+        // 6. Atividades recentes (trilha de auditoria)
         $recentAuditQuery = AuditLog::with(['user.role']);
         if (! $isAdmin) {
             $recentAuditQuery->where(function ($aq) use ($accessibleProjectIds) {
@@ -124,11 +154,14 @@ class DashboardMetricsService
                 'completed' => $projectsByStatus[ProjectStatus::COMPLETED->value] ?? 0,
                 'on_hold' => $projectsByStatus[ProjectStatus::ON_HOLD->value] ?? 0,
                 'archived' => $projectsByStatus[ProjectStatus::ARCHIVED->value] ?? 0,
+                'overdue' => $overdueProjects,
                 'by_status' => $projectsByStatus,
             ],
             'tasks' => [
                 'total' => $totalTasks,
                 'pending' => $pendingTasks,
+                'in_progress' => $tasksByStatus[TaskStatus::IN_PROGRESS->value] ?? 0,
+                'review' => $tasksByStatus[TaskStatus::REVIEW->value] ?? 0,
                 'completed' => $completedTasks,
                 'overdue' => $overdueTasks,
                 'completion_rate' => $completionRate,
@@ -144,6 +177,22 @@ class DashboardMetricsService
                     'high' => $tasksByPriority['high'] ?? 0,
                     'urgent' => $tasksByPriority['urgent'] ?? 0,
                 ],
+            ],
+            'productivity' => [
+                'completed_by_period' => $completedByPeriod,
+                'tasks_by_priority' => [
+                    'low' => $tasksByPriority['low'] ?? 0,
+                    'medium' => $tasksByPriority['medium'] ?? 0,
+                    'high' => $tasksByPriority['high'] ?? 0,
+                    'urgent' => $tasksByPriority['urgent'] ?? 0,
+                ],
+                'tasks_by_status' => [
+                    'todo' => $tasksByStatus[TaskStatus::TODO->value] ?? 0,
+                    'in_progress' => $tasksByStatus[TaskStatus::IN_PROGRESS->value] ?? 0,
+                    'review' => $tasksByStatus[TaskStatus::REVIEW->value] ?? 0,
+                    'done' => $tasksByStatus[TaskStatus::DONE->value] ?? 0,
+                ],
+                'tasks_by_user' => $tasksByUser,
             ],
             'my_tasks' => [
                 'total' => $myTotalTasks,

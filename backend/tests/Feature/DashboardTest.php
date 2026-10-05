@@ -173,4 +173,89 @@ class DashboardTest extends TestCase
         $response->assertOk()
             ->assertJsonCount(0, 'data.tasks');
     }
+
+    public function test_dashboard_endpoint_returns_indicators_and_productivity(): void
+    {
+        Task::factory()->create([
+            'project_id' => $this->project1->id,
+            'status' => TaskStatus::DONE,
+            'completed_at' => now(),
+            'assigned_to' => $this->user1->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson('/api/v1/dashboard');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'projects' => [
+                        'total',
+                        'active',
+                        'planning',
+                        'completed',
+                        'on_hold',
+                        'archived',
+                        'overdue',
+                    ],
+                    'tasks' => [
+                        'total',
+                        'pending',
+                        'in_progress',
+                        'review',
+                        'completed',
+                        'overdue',
+                        'completion_rate',
+                        'by_status',
+                        'by_priority',
+                    ],
+                    'productivity' => [
+                        'completed_by_period',
+                        'tasks_by_priority',
+                        'tasks_by_status',
+                        'tasks_by_user',
+                    ],
+                    'my_tasks',
+                    'upcoming_deadlines',
+                    'recent_activities',
+                ],
+            ]);
+    }
+
+    public function test_overdue_projects_are_accurately_counted(): void
+    {
+        // Projeto atrasado (due_date no passado e status ACTIVE)
+        Project::factory()->create([
+            'owner_id' => $this->admin->id,
+            'name' => 'Projeto Atrasado',
+            'code' => 'OVERDUE-01',
+            'status' => ProjectStatus::ACTIVE,
+            'due_date' => now()->subDays(5)->format('Y-m-d'),
+        ]);
+
+        // Projeto no prazo
+        Project::factory()->create([
+            'owner_id' => $this->admin->id,
+            'name' => 'Projeto No Prazo',
+            'code' => 'ONTIME-01',
+            'status' => ProjectStatus::ACTIVE,
+            'due_date' => now()->addDays(10)->format('Y-m-d'),
+        ]);
+
+        // Projeto com prazo vencido porém já CONCLUÍDO (não conta como atrasado)
+        Project::factory()->create([
+            'owner_id' => $this->admin->id,
+            'name' => 'Projeto Concluído Vencido',
+            'code' => 'COMPLETED-01',
+            'status' => ProjectStatus::COMPLETED,
+            'due_date' => now()->subDays(10)->format('Y-m-d'),
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson('/api/v1/dashboard');
+
+        $response->assertOk()
+            ->assertJsonPath('data.projects.overdue', 1);
+    }
 }
